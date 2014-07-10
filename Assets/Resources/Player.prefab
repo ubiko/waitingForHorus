@@ -3103,13 +3103,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9be5429cbf387c4f9140f7d1908fb9c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  proxyPrefab: 
+  ownerPrefab: 
+  serverPrefab: 
   _parent: {fileID: 0}
   _childIndex: -1
   _children: []
   stateSynchronization: 2
   securable: 3
   observed: {fileID: 11400000}
-  _manualViewID: -1
+  _manualViewID: 0
   rpcReceiver: 2
   listOfGameObjects: []
   _prefabRoot: {fileID: 100000}

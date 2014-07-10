@@ -19,7 +19,10 @@ public class Server : MonoBehaviour
 
     public GameMode DefaultGameMode;
 
+    // Only available on server owner
     public ExternalServerNotifier ServerNotifier { get; private set; }
+    // Only available on server owner
+    private PortMapper PortMapper;
 
     private bool WasMine = false;
 
@@ -139,6 +142,8 @@ public class Server : MonoBehaviour
         {
             _CurrentMapName = Application.loadedLevelName;
             IsGameActive = false;
+            // Set up hooks for UPnP
+            PortMapper = new PortMapper(Relay.Port);
         }
     }
 
@@ -165,6 +170,8 @@ public class Server : MonoBehaviour
             ServerNotifier.Name = PlayerPrefs.GetString("username", "Anonymous") + "'s server";
 
             Relay.Instance.OptionsMenu.ListOfMaps = Relay.Instance.ListedMaps.Where(Application.CanStreamedLevelBeLoaded).ToList();
+
+            PortMapper.ShouldMapNatDevices = true;
         }
 
         // I guess this check is redundant?
@@ -306,6 +313,11 @@ public class Server : MonoBehaviour
         {
             ServerNotifier.BecomeUnlisted();
         }
+
+        // Remove hooks for UPnP
+        if (PortMapper != null)
+            PortMapper.Dispose();
+
         //ServerNotifier.Dispose();
     }
 

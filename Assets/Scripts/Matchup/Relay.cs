@@ -30,8 +30,6 @@ public class Relay : MonoBehaviour
     private float TimeUntilRefresh = 0f;
     private float TimeBetweenRefreshes = 15f;
 
-    private PortMapper PortMapper;
-
     public const int CharacterSpawnGroupID = 1;
 
     public readonly string[] ListedMaps = new[]
@@ -134,8 +132,6 @@ public class Relay : MonoBehaviour
 		// hope to meet the minimum of 60 ticks per second.
         uLink.Network.sendRate = 80;
 
-        // Set up hooks for UPnP
-        PortMapper = new PortMapper(Port);
         // Set up thing that requests to get our WAN IP from some server.
         AddressFinder = new ExternalAddressFinder();
     }
@@ -159,7 +155,6 @@ public class Relay : MonoBehaviour
     {
         Application.LoadLevel(GetRandomMapName());
 
-        NatUtility.StartDiscovery();
         AddressFinder.FetchExternalAddress();
     }
 
@@ -191,8 +186,7 @@ public class Relay : MonoBehaviour
 		// not a great solution, since you can't play a local LAN game on a
 		// separate machine, but our current setup of using WAN/external IPs
 		// only doesn't support that anyway.
-        if (serverInfo.ip == PortMapper.DetectedExternalAddress ||
-            serverInfo.ip == AddressFinder.ExternalAddress)
+        if (serverInfo.ip == AddressFinder.ExternalAddress)
         {
             uLink.Network.Connect("127.0.0.1", Port);
             MessageLog.AddMessage("Connecting to 127.0.0.1");
@@ -397,13 +391,6 @@ public class Relay : MonoBehaviour
             }
 
             GUI.enabled = true;
-
-			GUILayout.Box( "", BoxSpacer );
-            if(GUILayout.Button("UPNP"))
-            {
-                GlobalSoundsScript.PlayButtonPress();
-                PortMapper.ShouldMapNatDevices = !PortMapper.ShouldMapNatDevices;
-            }
         }
         GUILayout.EndHorizontal();
     }
@@ -491,8 +478,6 @@ public class Relay : MonoBehaviour
         ExternalServerList.OnMasterServerListFetchError -= ReceiveMasterListFetchError;
         ExternalServerList.Dispose();
 
-        // Remove hooks for UPnP
-        PortMapper.Dispose();
         AddressFinder.Dispose();
     }
 
@@ -524,6 +509,7 @@ public class PortMapper : IDisposable
         // Set up hooks for UPnP
         NatUtility.DeviceFound += DeviceFound;
         NatUtility.DeviceLost += DeviceLost;
+        NatUtility.StartDiscovery();
     }
 
     private void TryRemoveDevice(INatDevice device)
@@ -585,22 +571,22 @@ public class PortMapper : IDisposable
         }
         if (exists)
         {
-            //MessageLog.AddMessage("Unable to map device: mapping already exists");
+            Relay.Instance.MessageLog.AddMessage("Unable to create UPnP port map: port has already been mapped.\nIs a server already running on your network?");
             return;
         }
         device.CreatePortMap(new Mapping(Protocol.Udp, Port, Port));
-        //MessageLog.AddMessage("Created port mapping on device " + device);
+        Relay.Instance.MessageLog.AddMessage("Created UPnP port mapping.");
     }
     private void UnmapDevice(INatDevice device)
     {
         try
         {
             device.DeletePortMap(new Mapping(Protocol.Udp, Port, Port));
-            //MessageLog.AddMessage("Deleted port mapping on device " + device);
+            Relay.Instance.MessageLog.AddMessage("Deleted port mapping.");
         }
         catch (MappingException)
         {
-            //MessageLog.AddMessage("Unable to delete port mapping on device " + device);
+            Relay.Instance.MessageLog.AddMessage("Unable to delete port mapping. That's odd.");
         }
     }
 

@@ -4,11 +4,6 @@ public class EffectsScript : MonoBehaviour
 {
     public static EffectsScript Instance { get; private set; }
 
-    public static void DoEffect(string effect, params object[] args)
-    {
-        Instance.GetComponent<uLink.NetworkView>().RPC(effect, uLink.RPCMode.All, args);
-    }
-
     public GameObject explosionPrefab;
     public GameObject explosionHitPrefab;
     public GameObject hitConePrefab;
@@ -52,7 +47,7 @@ public class EffectsScript : MonoBehaviour
 
     public static void PlayerWaterHitEffect(Vector3 position)
     {
-        Instance.GetComponent<uLink.NetworkView>().RPC("RemotePlayWaterHitEffect", uLink.RPCMode.Others, position);
+        Instance.GetComponent<uLink.NetworkView>().UnreliableRPC("RemotePlayWaterHitEffect", uLink.RPCMode.Others, position);
         Instance.RemotePlayWaterHitEffect(position);
     }
 

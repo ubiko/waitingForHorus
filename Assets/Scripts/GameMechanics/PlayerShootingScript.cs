@@ -429,7 +429,7 @@ public class PlayerShootingScript : MonoBehaviour
         {
             if (playerScript.ShouldSendMessages)
             {
-                GetComponent<uLink.NetworkView>().RPC("ShootFast", uLink.RPCMode.Others,
+                GetComponent<uLink.NetworkView>().UnreliableRPC("ShootFast", uLink.RPCMode.Others,
                     finalFiringPosition, finalFiringRotation, uLink.Network.player );
             }
             ShootFast( finalFiringPosition, finalFiringRotation, uLink.Network.player );
@@ -439,7 +439,7 @@ public class PlayerShootingScript : MonoBehaviour
         {
             if (playerScript.ShouldSendMessages)
             {
-                GetComponent<uLink.NetworkView>().RPC("Shoot", uLink.RPCMode.Others,
+                GetComponent<uLink.NetworkView>().UnreliableRPC("Shoot", uLink.RPCMode.Others,
                     finalFiringPosition, finalFiringRotation, uLink.Network.player);
             }
             Shoot( finalFiringPosition, finalFiringRotation, uLink.Network.player );
@@ -476,7 +476,7 @@ public class PlayerShootingScript : MonoBehaviour
 
         if (playerScript.ShouldSendMessages)
         {
-            GetComponent<uLink.NetworkView>().RPC("ShootHoming", uLink.RPCMode.Others,
+            GetComponent<uLink.NetworkView>().UnreliableRPC("ShootHoming", uLink.RPCMode.Others,
                 gun.position + firingDirection*4.0f, firingRotation*spreadRotation,
                 uLink.Network.player, targetOwner, lastKnownPosition, homing, doSound);
         }
@@ -491,7 +491,7 @@ public class PlayerShootingScript : MonoBehaviour
         Quaternion finalFiringRotation = Quaternion.FromToRotation(Vector3.forward, firingDirection);
         if (playerScript.ShouldSendMessages)
         {
-            GetComponent<uLink.NetworkView>().RPC("ShootRail", uLink.RPCMode.Others,
+            GetComponent<uLink.NetworkView>().UnreliableRPC("ShootRail", uLink.RPCMode.Others,
                 finalFiringPosition, finalFiringRotation, uLink.Network.player);
         }
         ShootRail( finalFiringPosition, finalFiringRotation, uLink.Network.player );

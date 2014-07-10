@@ -30,6 +30,8 @@ public class Relay : MonoBehaviour
     private float TimeUntilRefresh = 0f;
     private float TimeBetweenRefreshes = 15f;
 
+    private PortMapper PortMapper;
+
     public const int CharacterSpawnGroupID = 1;
 
     public readonly string[] ListedMaps = new[]
@@ -91,6 +93,8 @@ public class Relay : MonoBehaviour
 
     private ExternalServerList ExternalServerList;
 
+    public ExternalAddressFinder AddressFinder { get; private set; }
+
     [Serializable]
     public enum RunMode
     {
@@ -102,10 +106,6 @@ public class Relay : MonoBehaviour
 
     public Color GoodConnectionColor;
     public Color BadConnectionColor;
-
-    public string DetectedExternalAddress;
-    public delegate void DetectedExternalAddressChangedHandler(string newDetectedExternalAddress);
-    public event DetectedExternalAddressChangedHandler OnDetectedExternalAddressChanged = delegate {};
 
     public void Awake()
     {
@@ -135,8 +135,9 @@ public class Relay : MonoBehaviour
         uLink.Network.sendRate = 80;
 
         // Set up hooks for UPnP
-        NatUtility.DeviceFound += DeviceFound;
-        NatUtility.DeviceLost += DeviceLost;
+        PortMapper = new PortMapper(Port);
+        // Set up thing that requests to get our WAN IP from some server.
+        AddressFinder = new ExternalAddressFinder();
     }
 
     private string GetRandomMapName()
@@ -158,9 +159,8 @@ public class Relay : MonoBehaviour
     {
         Application.LoadLevel(GetRandomMapName());
 
-        DetectedExternalAddress = Network.player.externalIP;
         NatUtility.StartDiscovery();
-        //ExternalServerList.Refresh();
+        AddressFinder.FetchExternalAddress();
     }
 
     public void Connect(RunMode mode)
@@ -184,7 +184,15 @@ public class Relay : MonoBehaviour
     private void ConnectToExternalListedServer(ServerInfoRaw serverInfo)
     {
         TryingToConnect = true;
-        if (serverInfo.ip == DetectedExternalAddress)
+        // If it looks like it's coming from local LAN, try to connect to
+		// localhost. It seems some routers (like mine) will not respect UPnP
+		// port mappings if the origin is from within the local network, which
+		// obviously makes playtesting locally kind of hard! Obviously this is
+		// not a great solution, since you can't play a local LAN game on a
+		// separate machine, but our current setup of using WAN/external IPs
+		// only doesn't support that anyway.
+        if (serverInfo.ip == PortMapper.DetectedExternalAddress ||
+            serverInfo.ip == AddressFinder.ExternalAddress)
         {
             uLink.Network.Connect("127.0.0.1", Port);
             MessageLog.AddMessage("Connecting to 127.0.0.1");
@@ -207,14 +215,12 @@ public class Relay : MonoBehaviour
     public void uLink_OnServerInitialized()
     {
         TryingToConnect = false;
-        MessageLog.AddMessage("Started server on port " + Port);
-        var server = (Server)uLink.Network.Instantiate(BaseServer, Vector3.zero, Quaternion.identity, 0 );
-        //server.NetworkGUID = uLink.Network.player.guid;
-        server.NetworkGUID = DetectedExternalAddress;
-        MessageLog.AddMessage("Server GUID: " + server.NetworkGUID);
-        // Old method, would still be useful if we ever have multiple servers per Unity process (wha?)
-        //CurrentServer = (Server)uLink.Network.Instantiate(BaseServer, Vector3.zero, Quaternion.identity, 0 );
-        //CurrentServer.Relay = this;
+        var sb = new StringBuilder();
+        sb.AppendLine("Started server on port " + Port);
+        sb.Append("Your address is " + AddressFinder.ExternalAddress);
+        MessageLog.AddMessage(sb.ToString());
+        // Instantiated server will assign itself as the CurrentServer
+        uLink.Network.Instantiate(BaseServer, Vector3.zero, Quaternion.identity, 0 );
     }
 
     public void uLink_OnFailedToConnect(uLink.NetworkConnectionError error)
@@ -396,15 +402,8 @@ public class Relay : MonoBehaviour
             if(GUILayout.Button("UPNP"))
             {
                 GlobalSoundsScript.PlayButtonPress();
-                ShouldMapNatDevices = !ShouldMapNatDevices;
+                PortMapper.ShouldMapNatDevices = !PortMapper.ShouldMapNatDevices;
             }
-            //GUILayout.Box("", BoxSpacer);
-            //if (GUILayout.Button("UNMAP"))
-            //{
-            //    GlobalSoundsScript.PlayButtonPress();
-            //    NatUtility.StopDiscovery();
-            //    UnmapAllDevices();
-            //}
         }
         GUILayout.EndHorizontal();
     }
@@ -488,10 +487,8 @@ public class Relay : MonoBehaviour
         ExternalServerList.Dispose();
 
         // Remove hooks for UPnP
-        NatUtility.StopDiscovery();
-        NatUtility.DeviceFound -= DeviceFound;
-        NatUtility.DeviceLost -= DeviceLost;
-        ShouldMapNatDevices = false;
+        PortMapper.Dispose();
+        AddressFinder.Dispose();
     }
 
     private void ReceiveMasterListChanged()
@@ -503,8 +500,26 @@ public class Relay : MonoBehaviour
     {
         MessageLog.AddMessage("Failed to get server list: " + message);
     }
+}
 
+public class PortMapper : IDisposable
+{
+    
     private List<INatDevice> NatDevices = new List<INatDevice>();
+    public string DetectedExternalAddress { get; private set; }
+    public delegate void DetectedExternalAddressChangedHandler(string newDetectedExternalAddress);
+    public event DetectedExternalAddressChangedHandler OnDetectedExternalAddressChanged = delegate {};
+
+    public readonly int Port;
+
+    public PortMapper(int port)
+    {
+        Port = port;
+
+        // Set up hooks for UPnP
+        NatUtility.DeviceFound += DeviceFound;
+        NatUtility.DeviceLost += DeviceLost;
+    }
 
     private void TryRemoveDevice(INatDevice device)
     {
@@ -554,10 +569,6 @@ public class Relay : MonoBehaviour
 
     private void MapDevice(INatDevice device)
     {
-        //foreach (var mapping in device.GetAllMappings())
-        //{
-        //    MessageLog.AddMessage(mapping.ToString());
-        //}
         bool exists;
         try
         {
@@ -569,24 +580,22 @@ public class Relay : MonoBehaviour
         }
         if (exists)
         {
-            MessageLog.AddMessage("Unable to map device: mapping already exists");
+            //MessageLog.AddMessage("Unable to map device: mapping already exists");
             return;
         }
         device.CreatePortMap(new Mapping(Protocol.Udp, Port, Port));
-        //device.CreatePortMap(new Mapping(Protocol.Tcp, Port, Port));
-        MessageLog.AddMessage("Created port mapping on device " + device);
+        //MessageLog.AddMessage("Created port mapping on device " + device);
     }
     private void UnmapDevice(INatDevice device)
     {
         try
         {
             device.DeletePortMap(new Mapping(Protocol.Udp, Port, Port));
-            //device.DeletePortMap(new Mapping(Protocol.Tcp, Port, Port));
-            MessageLog.AddMessage("Deleted port mapping on device " + device);
+            //MessageLog.AddMessage("Deleted port mapping on device " + device);
         }
         catch (MappingException)
         {
-            MessageLog.AddMessage("Unable to delete port mapping on device " + device);
+            //MessageLog.AddMessage("Unable to delete port mapping on device " + device);
         }
     }
 
@@ -606,5 +615,13 @@ public class Relay : MonoBehaviour
         INatDevice device = args.Device;
 
         TryRemoveDevice(device);
+    }
+
+    public void Dispose()
+    {
+        NatUtility.StopDiscovery();
+        NatUtility.DeviceFound -= DeviceFound;
+        NatUtility.DeviceLost -= DeviceLost;
+        ShouldMapNatDevices = false;
     }
 }

@@ -8,6 +8,72 @@ using JsonFx.Json;
 
 namespace uLink.MasterServer
 {
+    public class ExternalAddressFinder : IDisposable
+    {
+        public string URI = "http://acyclic.jp:3334/my_address";
+        private WebClient WebClient;
+        private JsonReader Reader;
+
+        public string ExternalAddress { get; private set; }
+        public delegate void ExternalAddressChangedHandler(string newExternalAddress);
+        public event ExternalAddressChangedHandler OnExternalAddressChanged = delegate {};
+        public event ExternalAddressChangedHandler OnExternalAddressError = delegate {}; 
+
+        public ExternalAddressFinder()
+        {
+            WebClient = new WebClient();
+            WebClient.DownloadStringCompleted += ReceiveDownloadStringCompleted;
+            Reader = new JsonReader();
+        }
+
+        public void FetchExternalAddress()
+        {
+            WebClient.CancelAsync();
+            var uri = new Uri(URI);
+            WebClient.DownloadStringAsync(uri);
+        }
+
+        private void ReceiveDownloadStringCompleted(object sender, DownloadStringCompletedEventArgs args)
+        {
+            try
+            {
+                if (!args.Cancelled)
+                {
+                    string res = args.Result;
+                    var parsed = Reader.Read<MyAddressRaw>(res);
+                    if (parsed != null)
+                    {
+                        ExternalAddress = parsed.requester_address;
+                        OnExternalAddressChanged(ExternalAddress);
+                    }
+                    else
+                    {
+                        OnExternalAddressError(
+                            "Unable to get external IP address for this server.");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                OnExternalAddressError(e.ToString());
+            }
+        }
+
+        public void Dispose()
+        {
+            if (WebClient != null)
+            {
+                WebClient.CancelAsync();
+                WebClient.Dispose();
+            }
+        }
+
+        public class MyAddressRaw
+        {
+            public string requester_address;
+        }
+    }
+
     // Handles fetching and parsing the list of servers from the master list
 	// server
     public class ExternalServerList : IDisposable
@@ -182,7 +248,7 @@ namespace uLink.MasterServer
         public void Update()
         {
             TimeUntilNextSend -= Time.deltaTime;
-            if (TimeUntilNextSend <= 0f)
+            if (TimeUntilNextSend <= 0f && !String.IsNullOrEmpty(GUID))
             {
                 TimeUntilNextSend = TimeBetweenSends;
                 SendNow();

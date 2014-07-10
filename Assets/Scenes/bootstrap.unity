@@ -186,7 +186,6 @@ MonoBehaviour:
   ConnectingServerHostname: 127.0.0.1
   GoodConnectionColor: {r: 0, g: 1, b: 0, a: 1}
   BadConnectionColor: {r: 1, g: 0, b: 0, a: 1}
-  DetectedExternalAddress: 
 --- !u!4 &138782053
 Transform:
   m_ObjectHideFlags: 0

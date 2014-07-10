@@ -19,9 +19,6 @@ public class Server : MonoBehaviour
 
     public GameMode DefaultGameMode;
 
-    // Will only be available on the server
-    public string NetworkGUID { get; set; }
-
     public ExternalServerNotifier ServerNotifier { get; private set; }
 
     private bool WasMine = false;
@@ -174,6 +171,7 @@ public class Server : MonoBehaviour
         if (!GetComponent<uLink.NetworkView>().isMine)
         {
             GetComponent<uLink.NetworkView>().RPC("RequestedMapNameFromRemote", GetComponent<uLink.NetworkView>().owner);
+            // Get our external address
         }
 
         BannerStyle = Relay.Instance.BaseSkin.customStyles[3];
@@ -216,9 +214,13 @@ public class Server : MonoBehaviour
     {
         if (GetComponent<uLink.NetworkView>().isMine)
         {
-            ServerNotifier.GUID = NetworkGUID;
+            ServerNotifier.GUID = Relay.Instance.AddressFinder.ExternalAddress;
             ServerNotifier.CurrentMapName = Application.loadedLevelName;
             ServerNotifier.NumberOfPlayers = PlayerPresence.UnsafeAllPlayerPresences.Count;
+            // In case our external address is still null, Update() in the
+			// ServerNotifier won't actually send to the list server, so it's
+			// fine to call it here. (It will send as soon as our address is not
+			// null).
             ServerNotifier.Update();
         }
         Leaderboard.Update();
@@ -295,6 +297,7 @@ public class Server : MonoBehaviour
                     indicator.enabled = false;
             }
         }
+
 
         // Will need to not dispose this if we're going to delist our server,
 		// since we'll have to hand this off to the Relay for ownership.

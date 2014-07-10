@@ -249,6 +249,12 @@ public class Server : MonoBehaviour
     // Only called by Unity on server
     public void uLink_OnPlayerConnected(uLink.NetworkPlayer player)
     {
+        // Explictly add players to the Character group ID, so that they can
+		// still see what happens even if they don't have a character currently
+		// spawned.
+        if (!player.isServer)
+            uLink.Network.AddPlayerToGroup(player, Relay.CharacterSpawnGroupID);
+
         NetworkPlayers.Add(player);
     }
 

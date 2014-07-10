@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class EffectsScript : MonoBehaviour 
+public class EffectsScript : uLink.MonoBehaviour 
 {
     public static EffectsScript Instance { get; private set; }
 
@@ -47,7 +47,7 @@ public class EffectsScript : MonoBehaviour
 
     public static void PlayerWaterHitEffect(Vector3 position)
     {
-        Instance.GetComponent<uLink.NetworkView>().UnreliableRPC("RemotePlayWaterHitEffect", uLink.RPCMode.Others, position);
+        Instance.networkView.UnreliableRPC("RemotePlayWaterHitEffect", uLink.RPCMode.Others, position);
         Instance.RemotePlayWaterHitEffect(position);
     }
 

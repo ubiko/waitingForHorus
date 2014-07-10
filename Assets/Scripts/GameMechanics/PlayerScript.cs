@@ -6,7 +6,7 @@ using UnityEngine;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerScript : MonoBehaviour
+public class PlayerScript : uLink.MonoBehaviour
 {
     const float JumpInputQueueTime = 0.2f;
 
@@ -93,7 +93,7 @@ public class PlayerScript : MonoBehaviour
                     flagPart.enabled = _HasFlagVisible;
                 // hack
                 if (uLink.Network.isServer)
-                    GetComponent<uLink.NetworkView>().RPC("RemoteReceiveHasFlagVisible", uLink.RPCMode.Others, _HasFlagVisible);
+                    networkView.RPC("RemoteReceiveHasFlagVisible", uLink.RPCMode.Others, _HasFlagVisible);
                 HasEverSetFlagVisibility = true;
             }
         }
@@ -127,7 +127,7 @@ public class PlayerScript : MonoBehaviour
     {
         if (uLink.Network.isServer && HasEverSetFlagVisibility) // try to avoid wastefulness
         {
-            GetComponent<uLink.NetworkView>().RPC("RemoteReceiveHasFlagVisible", info.sender, _HasFlagVisible);
+            networkView.RPC("RemoteReceiveHasFlagVisible", info.sender, _HasFlagVisible);
         }
     }
 
@@ -258,7 +258,7 @@ public class PlayerScript : MonoBehaviour
 
     public void Start()
     {
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
             gameObject.layer = LayerMask.NameToLayer( "LocalPlayer" );
         }
@@ -271,7 +271,7 @@ public class PlayerScript : MonoBehaviour
         OnPlayerScriptSpawned(this);
 
         // FIXME dirty hack
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
             var indicator = Relay.Instance.MainCamera.GetComponent<WeaponIndicatorScript>();
             if (indicator != null)
@@ -285,7 +285,7 @@ public class PlayerScript : MonoBehaviour
 
         if (!uLink.Network.isServer)
         {
-            GetComponent<uLink.NetworkView>().RPC("ReceiveRemoteWantsFlagVisibility", uLink.RPCMode.Server);
+            networkView.RPC("ReceiveRemoteWantsFlagVisibility", uLink.RPCMode.Server);
         }
         if (uLink.Network.isServer)
         {
@@ -307,7 +307,7 @@ public class PlayerScript : MonoBehaviour
         Targeted(enemy);
         if (ShouldSendMessages)
         {
-            GetComponent<uLink.NetworkView>().RPC("RemoteReceiveTargetedBy", uLink.RPCMode.Others, enemy.GetComponent<uLink.NetworkView>().viewID);
+            networkView.RPC("RemoteReceiveTargetedBy", uLink.RPCMode.Others, enemy.networkView.viewID);
         }
     }
 
@@ -316,7 +316,7 @@ public class PlayerScript : MonoBehaviour
         Untargeted(enemy);
         if (ShouldSendMessages)
         {
-            GetComponent<uLink.NetworkView>().RPC("RemoteReceiveUntargetedBy", uLink.RPCMode.Others, enemy.GetComponent<uLink.NetworkView>().viewID);
+            networkView.RPC("RemoteReceiveUntargetedBy", uLink.RPCMode.Others, enemy.networkView.viewID);
         }
     }
 
@@ -401,7 +401,7 @@ public class PlayerScript : MonoBehaviour
         if (this == null) return;
         // Also check if enemy is null, might have been destroyed by the time
 		// this RPC is called.
-        if (GetComponent<uLink.NetworkView>().isMine && enemy != null)
+        if (networkView.isMine && enemy != null)
         {
             ScreenSpaceDebug.AddMessage("TARGETED BY", enemy.transform.position);
         }
@@ -412,7 +412,7 @@ public class PlayerScript : MonoBehaviour
 // ReSharper disable once ConditionIsAlwaysTrueOrFalse
 // ReSharper disable once HeuristicUnreachableCode
         if (this == null) return;
-        if (GetComponent<uLink.NetworkView>().isMine && enemy != null)
+        if (networkView.isMine && enemy != null)
         {
             ScreenSpaceDebug.AddMessage("UNTARGETED BY", enemy.transform.position);
         }
@@ -420,7 +420,7 @@ public class PlayerScript : MonoBehaviour
 	
     public void ResetWarnings()
     {
-        if( !GetComponent<uLink.NetworkView>().isMine ) return; 
+        if( !networkView.isMine ) return; 
 		
 		for( int i = 0; i < warningSpheres.Count; i++ ) Destroy( warningSpheres[i] );
 		warningSpheres.Clear();
@@ -429,7 +429,7 @@ public class PlayerScript : MonoBehaviour
     [RPC]
     public void AddRecoil(Vector3 impulse)
     {
-        if (!GetComponent<uLink.NetworkView>().isMine) return;
+        if (!networkView.isMine) return;
         recoilVelocity += impulse;
         if (impulse.y > 0)
             sinceNotGrounded = 0.25f;
@@ -438,7 +438,7 @@ public class PlayerScript : MonoBehaviour
 
     public void ResetVelocities()
     {
-        if (!GetComponent<uLink.NetworkView>().isMine) return;
+        if (!networkView.isMine) return;
         recoilVelocity = Vector3.zero;
         fallingVelocity = Vector3.zero;
     }
@@ -480,7 +480,7 @@ public class PlayerScript : MonoBehaviour
         EnemiesTargetingUs.Update();
 
         // Only interested in playing sound effects locally
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
             TimeSinceLastTargetedWarningPlayed += Time.deltaTime;
             // Play sound effect if necessary
@@ -493,7 +493,7 @@ public class PlayerScript : MonoBehaviour
             }
         }
 
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
             //TextBubbleVisible = ChatScript.Instance.showChat;
 
@@ -576,7 +576,7 @@ public class PlayerScript : MonoBehaviour
         cameraPivot.rotation = smoothLookRotation;
 
         // dash animation
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
             Color color = dashEffectRenderer.material.GetColor("_TintColor");
             Vector3 dashVelocity = new Vector3(fallingVelocity.x, activelyJumping ? 0 : Math.Max(fallingVelocity.y, 0), fallingVelocity.z);
@@ -596,13 +596,13 @@ public class PlayerScript : MonoBehaviour
 
         if(!controller.enabled) return;
         if (Paused) return;
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
             UpdateMovement();
         else
             UpdateRemoteMovement();
 
         // FIXME Hackity hack
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
             var indicator = Relay.Instance.MainCamera.GetComponent<WeaponIndicatorScript>();
             indicator.HealthCapacity = HealthScript.maxHealth;
@@ -620,7 +620,7 @@ public class PlayerScript : MonoBehaviour
         // jump and dash
         dashCooldown -= Time.deltaTime;
 	 	bool justJumped = false;
-        if((GetComponent<uLink.NetworkView>().isMine) && Time.time - lastJumpInputTime <= JumpInputQueueTime)
+        if((networkView.isMine) && Time.time - lastJumpInputTime <= JumpInputQueueTime)
         {
             bool groundedOrRecentRocketJump = controller.isGrounded || RecentlyDidRocketJump;
             bool recoilOk = recoilVelocity.y <= 0;
@@ -875,7 +875,7 @@ public class PlayerScript : MonoBehaviour
                 float bad = 0.8f;
                 float q = Relay.DesiredTimeBetweenNetworkSends / SlowAverageTimeBetweenNetworkFrames;
                 // Set the quality on the possessor (we're measuring it based on
-				// the packets arriving for this GetComponent<uLink.NetworkView>(), that's why we do
+				// the packets arriving for this networkView, that's why we do
 				// this stuff here instead of on the PlayerPresence, which is
 				// 'reliable delta compressed' type of networkview, and not as
 				// useful for measurements.
@@ -979,12 +979,12 @@ public class PlayerScript : MonoBehaviour
     {
         if (!uLink.Network.isServer)
         {
-            GetComponent<uLink.NetworkView>().RPC("PerformDestroy", uLink.RPCMode.Server);
+            networkView.RPC("PerformDestroy", uLink.RPCMode.Server);
         }
         else
         {
-            uLink.Network.RemoveRPCs(GetComponent<uLink.NetworkView>().owner, Relay.CharacterSpawnGroupID);
-            uLink.Network.Destroy(GetComponent<uLink.NetworkView>().viewID);
+            uLink.Network.RemoveRPCs(networkView.owner, Relay.CharacterSpawnGroupID);
+            uLink.Network.Destroy(networkView.viewID);
         }
     }
 
@@ -1069,7 +1069,7 @@ public class PlayerScript : MonoBehaviour
         if (uLink.Network.isServer)
             OnPlayerScriptDied(this, instigator);
         else
-            GetComponent<uLink.NetworkView>().RPC("ServerRequestedToDie", uLink.RPCMode.Server, instigator.GetComponent<uLink.NetworkView>().viewID);
+            networkView.RPC("ServerRequestedToDie", uLink.RPCMode.Server, instigator.networkView.viewID);
     }
 
     [RPC]

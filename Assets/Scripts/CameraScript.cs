@@ -217,7 +217,7 @@ public class CameraScript : MonoBehaviour
 
     public void Start()
     {
-        if(player.GetComponent<uLink.NetworkView>().isMine)
+        if(player.networkView.isMine)
         {
             mainCamera = Camera.main;
         }
@@ -230,7 +230,7 @@ public class CameraScript : MonoBehaviour
         UpdateCameraObjectVisibiliy();
 
         // More hacks
-        if (player.GetComponent<uLink.NetworkView>().isMine)
+        if (player.networkView.isMine)
         {
             int layerID = LayerMask.NameToLayer("LocalPlayer");
             foreach (var objectToHide in ObjectsToHideInFirstPerson)
@@ -246,7 +246,7 @@ public class CameraScript : MonoBehaviour
     public void Update()
     {
         if (!mainCamera) return;
-        if (!player.GetComponent<uLink.NetworkView>().isMine) return;
+        if (!player.networkView.isMine) return;
 
         if (Input.GetButtonDown("DecreaseFOV"))
         {
@@ -334,7 +334,7 @@ public class CameraScript : MonoBehaviour
             return;
         }
 
-        if(player.GetComponent<uLink.NetworkView>().isMine)
+        if(player.networkView.isMine)
         {
             // Update inferred position and velocity
             Vector3 newPosition = player.transform.position;
@@ -447,7 +447,7 @@ public class CameraScript : MonoBehaviour
 
     public void OnGUI()
     {
-        if(player.GetComponent<uLink.NetworkView>().isMine)
+        if(player.networkView.isMine)
         {
 			var color = Color.white;
 	        if( aimingAtPlayer )

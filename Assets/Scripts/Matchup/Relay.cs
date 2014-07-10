@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using uLink.MasterServer;
+using Network.MasterServer;
 using UnityEngine;
 using Mono.Nat;
 
 // A single instance, as part of the startup scene, which is used to communicate
 // with the connected server or clients.
-public class Relay : MonoBehaviour
+public class Relay : uLink.MonoBehaviour
 {
     // Global, ewww, but probably the only one we'll need in the end.
     public static Relay Instance { get; private set; }

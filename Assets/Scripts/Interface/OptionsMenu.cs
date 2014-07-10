@@ -216,7 +216,7 @@ public class OptionsMenu
 
         // Bit of a hack for now
         if (Relay.Instance.CurrentServer != null)
-            ShouldDisplayServerOptions = Relay.Instance.CurrentServer.GetComponent<uLink.NetworkView>().isMine;
+            ShouldDisplayServerOptions = Relay.Instance.CurrentServer.networkView.isMine;
     }
 
     public void DrawGUI()

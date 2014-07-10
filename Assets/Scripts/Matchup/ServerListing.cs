@@ -6,7 +6,7 @@ using UnityEngine;
 
 using JsonFx.Json;
 
-namespace uLink.MasterServer
+namespace Network.MasterServer
 {
     public class ExternalAddressFinder : IDisposable
     {

@@ -6,7 +6,7 @@ using UnityEngine;
 using System;
 using Random = UnityEngine.Random;
 
-public class PlayerShootingScript : MonoBehaviour
+public class PlayerShootingScript : uLink.MonoBehaviour
 {
     public const float AimingTime = 0.75f;
 
@@ -197,7 +197,7 @@ public class PlayerShootingScript : MonoBehaviour
         if (playerScript.Paused)
             bulletsLeft = BurstCount;
 		
-        if ( GetComponent<uLink.NetworkView>().isMine && Screen.lockCursor && !playerScript.Paused )
+        if ( networkView.isMine && Screen.lockCursor && !playerScript.Paused )
 		{
 			cooldownLeft = Mathf.Max( 0, cooldownLeft - Time.deltaTime );
 			heat = Mathf.Clamp01( heat - Time.deltaTime );
@@ -429,7 +429,7 @@ public class PlayerShootingScript : MonoBehaviour
         {
             if (playerScript.ShouldSendMessages)
             {
-                GetComponent<uLink.NetworkView>().UnreliableRPC("ShootFast", uLink.RPCMode.Others,
+                networkView.UnreliableRPC("ShootFast", uLink.RPCMode.Others,
                     finalFiringPosition, finalFiringRotation, uLink.Network.player );
             }
             ShootFast( finalFiringPosition, finalFiringRotation, uLink.Network.player );
@@ -439,7 +439,7 @@ public class PlayerShootingScript : MonoBehaviour
         {
             if (playerScript.ShouldSendMessages)
             {
-                GetComponent<uLink.NetworkView>().UnreliableRPC("Shoot", uLink.RPCMode.Others,
+                networkView.UnreliableRPC("Shoot", uLink.RPCMode.Others,
                     finalFiringPosition, finalFiringRotation, uLink.Network.player);
             }
             Shoot( finalFiringPosition, finalFiringRotation, uLink.Network.player );
@@ -470,13 +470,13 @@ public class PlayerShootingScript : MonoBehaviour
         uLink.NetworkPlayer targetOwner = uLink.Network.player;
         if( target != null )
         {
-            targetOwner = target.GetComponent<uLink.NetworkView>().owner;
+            targetOwner = target.networkView.owner;
             lastKnownPosition = target.transform.position;
         }
 
         if (playerScript.ShouldSendMessages)
         {
-            GetComponent<uLink.NetworkView>().UnreliableRPC("ShootHoming", uLink.RPCMode.Others,
+            networkView.UnreliableRPC("ShootHoming", uLink.RPCMode.Others,
                 gun.position + firingDirection*4.0f, firingRotation*spreadRotation,
                 uLink.Network.player, targetOwner, lastKnownPosition, homing, doSound);
         }
@@ -491,7 +491,7 @@ public class PlayerShootingScript : MonoBehaviour
         Quaternion finalFiringRotation = Quaternion.FromToRotation(Vector3.forward, firingDirection);
         if (playerScript.ShouldSendMessages)
         {
-            GetComponent<uLink.NetworkView>().UnreliableRPC("ShootRail", uLink.RPCMode.Others,
+            networkView.UnreliableRPC("ShootRail", uLink.RPCMode.Others,
                 finalFiringPosition, finalFiringRotation, uLink.Network.player);
         }
         ShootRail( finalFiringPosition, finalFiringRotation, uLink.Network.player );
@@ -529,7 +529,7 @@ public class PlayerShootingScript : MonoBehaviour
         try
         {
             targetScript = PlayerScript.UnsafeAllEnabledPlayerScripts.Where(
-                x => x.GetComponent<uLink.NetworkView>().owner == target).OrderBy(x => Vector3.Distance(x.transform.position, lastKnownPosition)).FirstOrDefault();
+                x => x.networkView.owner == target).OrderBy(x => Vector3.Distance(x.transform.position, lastKnownPosition)).FirstOrDefault();
         }
         catch (Exception) { targetScript = null; }
 

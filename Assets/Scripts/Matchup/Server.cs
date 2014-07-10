@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using uLink.MasterServer;
+using Network.MasterServer;
 using UnityEngine;
 
-public class Server : MonoBehaviour
+public class Server : uLink.MonoBehaviour
 {
     public GameMode CurrentGameMode { get; private set; }
     public PlayerPresence BasePlayerPresence;
@@ -49,7 +49,7 @@ public class Server : MonoBehaviour
             if (_StatusMessage != value)
             {
                 _StatusMessage = value;
-                if (GetComponent<uLink.NetworkView>().isMine)
+                if (networkView.isMine)
                     UpdateStatusMessage();
                 OnStatusMessageChange();
             }
@@ -60,21 +60,21 @@ public class Server : MonoBehaviour
 
     private void UpdateStatusMessage()
     {
-        GetComponent<uLink.NetworkView>().RPC("RemoteReceiveStatusMessage", uLink.RPCMode.Others, StatusMessage);
+        networkView.RPC("RemoteReceiveStatusMessage", uLink.RPCMode.Others, StatusMessage);
     }
 
     private void RequestStatusMessageFromRemote()
     {
-        GetComponent<uLink.NetworkView>().RPC("OwnerReceiveRemoteWantsStatusMessage", GetComponent<uLink.NetworkView>().owner);
+        networkView.RPC("OwnerReceiveRemoteWantsStatusMessage", networkView.owner);
     }
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
     protected void OwnerReceiveRemoteWantsStatusMessage(uLink.NetworkMessageInfo info)
     {
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
-            GetComponent<uLink.NetworkView>().RPC("RemoteReceiveStatusMessage", info.sender, StatusMessage);
+            networkView.RPC("RemoteReceiveStatusMessage", info.sender, StatusMessage);
         }
     }
 
@@ -82,7 +82,7 @@ public class Server : MonoBehaviour
 // ReSharper disable once UnusedMember.Local
     protected void RemoteReceiveStatusMessage(string newStatusMessage, uLink.NetworkMessageInfo info)
     {
-        if (info.sender == GetComponent<uLink.NetworkView>().owner)
+        if (info.sender == networkView.owner)
             StatusMessage = newStatusMessage;
     }
 
@@ -97,9 +97,9 @@ public class Server : MonoBehaviour
         private set
         {
             _CurrentMapName = value;
-            if (GetComponent<uLink.NetworkView>().isMine)
+            if (networkView.isMine)
             {
-                GetComponent<uLink.NetworkView>().RPC("RemoteReceiveMapName", uLink.RPCMode.Others, _CurrentMapName);
+                networkView.RPC("RemoteReceiveMapName", uLink.RPCMode.Others, _CurrentMapName);
             }
             if (Application.CanStreamedLevelBeLoaded(_CurrentMapName))
             {
@@ -113,14 +113,14 @@ public class Server : MonoBehaviour
 // ReSharper disable once UnusedMember.Local
     protected void RequestedMapNameFromRemote(uLink.NetworkMessageInfo info)
     {
-        GetComponent<uLink.NetworkView>().RPC("RemoteReceiveMapName", info.sender, CurrentMapName);
+        networkView.RPC("RemoteReceiveMapName", info.sender, CurrentMapName);
     }
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
     protected void RemoteReceiveMapName(string mapName, uLink.NetworkMessageInfo info)
     {
-        if (GetComponent<uLink.NetworkView>().owner == info.sender)
+        if (networkView.owner == info.sender)
             CurrentMapName = mapName;
     }
 
@@ -138,7 +138,7 @@ public class Server : MonoBehaviour
 
         BannerMessages = new List<BannerMessage>();
 
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
             _CurrentMapName = Application.loadedLevelName;
             IsGameActive = false;
@@ -149,7 +149,7 @@ public class Server : MonoBehaviour
 
     public void uLink_OnNetworkInstantiate(uLink.NetworkMessageInfo info)
     {
-        if (!GetComponent<uLink.NetworkView>().isMine)
+        if (!networkView.isMine)
         {
             RequestStatusMessageFromRemote();
         }
@@ -161,7 +161,7 @@ public class Server : MonoBehaviour
         PlayerPresence.OnPlayerPresenceAdded += ReceivePlayerPresenceAdd;
         PlayerPresence.OnPlayerPresenceRemoved += ReceivePlayerPresenceRemove;
         SpawnPresence();
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
             WasMine = true;
             uLink_OnPlayerConnected(uLink.Network.player);
@@ -175,9 +175,9 @@ public class Server : MonoBehaviour
         }
 
         // I guess this check is redundant?
-        if (!GetComponent<uLink.NetworkView>().isMine)
+        if (!networkView.isMine)
         {
-            GetComponent<uLink.NetworkView>().RPC("RequestedMapNameFromRemote", GetComponent<uLink.NetworkView>().owner);
+            networkView.RPC("RequestedMapNameFromRemote", networkView.owner);
             // Get our external address
         }
 
@@ -219,7 +219,7 @@ public class Server : MonoBehaviour
 
     public void Update()
     {
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
             ServerNotifier.GUID = Relay.Instance.AddressFinder.ExternalAddress;
             ServerNotifier.CurrentMapName = Application.loadedLevelName;
@@ -269,7 +269,7 @@ public class Server : MonoBehaviour
     public void OnLevelWasLoaded(int level)
     {
         uLink.Network.isMessageQueueRunning = true;
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
             CurrentGameMode.ReceiveMapChanged();
         }
@@ -343,9 +343,9 @@ public class Server : MonoBehaviour
 
     public void BroadcastMessageFromServer(string text, int messageType)
     {
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
-            GetComponent<uLink.NetworkView>().RPC("ReceiveServerMessage", uLink.RPCMode.Others, text, messageType);
+            networkView.RPC("ReceiveServerMessage", uLink.RPCMode.Others, text, messageType);
 
             HandleMessage(text, messageType);
             OnReceiveServerMessage(text);
@@ -354,9 +354,9 @@ public class Server : MonoBehaviour
 
     public void SendMessageFromServer(string text, uLink.NetworkPlayer target)
     {
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
-            GetComponent<uLink.NetworkView>().RPC("ReceiveServerMessage", target, text, DefaultMessageType);
+            networkView.RPC("ReceiveServerMessage", target, text, DefaultMessageType);
         }
     }
 
@@ -381,7 +381,7 @@ public class Server : MonoBehaviour
         {
             case "announce":
                 if (args.Length < 1) break;
-                if (GetComponent<uLink.NetworkView>().isMine)
+                if (networkView.isMine)
                     BroadcastMessageFromServer(String.Join(" ", args), BannerMessageType);
             break;
         }
@@ -393,7 +393,7 @@ public class Server : MonoBehaviour
     protected void ReceiveServerMessage(string text, int messageType, uLink.NetworkMessageInfo info)
     {
         // Only care about messages from server
-        if (info.sender != GetComponent<uLink.NetworkView>().owner) return;
+        if (info.sender != networkView.owner) return;
 
         HandleMessage(text, messageType);
         OnReceiveServerMessage(text);
@@ -401,7 +401,7 @@ public class Server : MonoBehaviour
 
     public void BroadcastChatMessageFromServer(string text, PlayerPresence playerPresence)
     {
-        bool isHost = playerPresence.GetComponent<uLink.NetworkView>().owner == GetComponent<uLink.NetworkView>().owner;
+        bool isHost = playerPresence.networkView.owner == networkView.owner;
         string sigil = isHost ? "+ " : "";
         BroadcastMessageFromServer(sigil + playerPresence.Name + " : " + text, ChatMessageType);
     }

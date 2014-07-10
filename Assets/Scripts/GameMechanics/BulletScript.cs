@@ -83,7 +83,7 @@ public class BulletScript : MonoBehaviour
         if(damage > 0 && health != null)
         {
             if (health.PlayerScript.Possessor != Instigator && // No Friendly Fire
-                uLink.Network.player == Instigator.GetComponent<uLink.NetworkView>().owner) // only do damage from net player that fired
+                uLink.Network.player == Instigator.networkView.owner) // only do damage from net player that fired
 			{
 				audio.Play(); //Hitreg Sound
 			    health.DeclareHitToOthers(damage, point, Instigator);
@@ -102,7 +102,7 @@ public class BulletScript : MonoBehaviour
             var hitReceiver = c.gameObject.GetComponent<PlayerHitReceiver>();
             if (hitReceiver == null) continue;
             // Recoil is applied per-client, locally
-            if (!hitReceiver.Player.gameObject.GetComponent<uLink.NetworkView>().isMine) continue;
+            if (!hitReceiver.Player.networkView.isMine) continue;
 
             var playerTransform = hitReceiver.Player.gameObject.transform;
 

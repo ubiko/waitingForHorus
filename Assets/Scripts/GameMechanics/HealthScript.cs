@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class HealthScript : MonoBehaviour
+public class HealthScript : uLink.MonoBehaviour
 {
     public int maxShield = 1;
     public int maxHealth = 2;
@@ -65,7 +65,7 @@ public class HealthScript : MonoBehaviour
         }
 
         // TODO magical -104 number, what does it do?
-        if( GetComponent<uLink.NetworkView>().isMine && transform.position.y < KillHeight && !isInWater )
+        if( networkView.isMine && transform.position.y < KillHeight && !isInWater )
         {
             isInWater = true;
 
@@ -97,7 +97,7 @@ public class HealthScript : MonoBehaviour
             firstSet = true;
         }
 
-        if(GetComponent<uLink.NetworkView>().isMine)
+        if(networkView.isMine)
         {
             timeUntilShieldRegen -= Time.deltaTime;
             if(timeUntilShieldRegen < 0 && Shield < maxShield)
@@ -150,7 +150,7 @@ public class HealthScript : MonoBehaviour
 
     public void DeclareHitToOthers(int damage, Vector3 point, PlayerPresence instigator)
     {
-        GetComponent<uLink.NetworkView>().RPC("OthersReceiveHit", uLink.RPCMode.Others, damage, point, instigator.GetComponent<uLink.NetworkView>().viewID);
+        networkView.RPC("OthersReceiveHit", uLink.RPCMode.Others, damage, point, instigator.networkView.viewID);
     }
 
     [RPC]
@@ -158,7 +158,7 @@ public class HealthScript : MonoBehaviour
     protected void OthersReceiveHit(int damage, Vector3 point, uLink.NetworkViewID instigatorPresenceViewID)
     {
 		EffectsScript.ExplosionHit( point, Quaternion.LookRotation( Vector3.up ) );
-        if (GetComponent<uLink.NetworkView>().isMine)
+        if (networkView.isMine)
         {
             DoDamageOwner(damage, point,
                 PlayerPresence.TryGetPlayerPresenceFromNetworkViewID(instigatorPresenceViewID));
@@ -198,7 +198,7 @@ public class HealthScript : MonoBehaviour
     {
         // TODO is this the same as uLink.RPCMode.All ?
         RemotePlayDeathPrefab();
-        GetComponent<uLink.NetworkView>().RPC("RemotePlayDeathPrefab", uLink.RPCMode.Others);
+        networkView.RPC("RemotePlayDeathPrefab", uLink.RPCMode.Others);
     }
     [RPC]
     protected void RemotePlayDeathPrefab()

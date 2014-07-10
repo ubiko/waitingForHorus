@@ -418,13 +418,18 @@ public class Relay : MonoBehaviour
             foreach (var serverInfo in ExternalServerList.MasterListRaw.servers)
             {
                 sb.Append(serverInfo.name);
-                sb.Append(", ");
-                sb.Append(serverInfo.players);
-                sb.Append(" players on ");
-                sb.Append(serverInfo.map);
+                if (serverInfo.VersionMismatch)
+                {
+                    sb.Append( " |Incompatible Version|" );
+                }
+                else
+                {
+                    sb.Append(", ");
+                    sb.Append(serverInfo.players);
+                    sb.Append(" players on ");
+                    sb.Append(serverInfo.map);
+                }
 
-                if( serverInfo.VersionMismatch )
-                    sb.Append( " |Game Using Incompatible Version|" );
 
                 GUILayout.BeginHorizontal();
                 //rowStyle.normal.textColor = PlayerRegistry.For(log.Player).Color;

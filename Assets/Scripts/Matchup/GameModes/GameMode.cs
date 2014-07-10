@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 
 // GameModes are only spawned on the server, and are not replicated. Use the
@@ -19,5 +19,5 @@ public class GameMode : MonoBehaviour
 
     public virtual void ReceiveMapChanged() {}
 
-    public virtual void OnNewConnection(NetworkPlayer newPlayer) { }
+    public virtual void OnNewConnection(uLink.NetworkPlayer newPlayer) { }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -216,7 +216,7 @@ public class OptionsMenu
 
         // Bit of a hack for now
         if (Relay.Instance.CurrentServer != null)
-            ShouldDisplayServerOptions = Relay.Instance.CurrentServer.networkView.isMine;
+            ShouldDisplayServerOptions = Relay.Instance.CurrentServer.GetComponent<uLink.NetworkView>().isMine;
     }
 
     public void DrawGUI()

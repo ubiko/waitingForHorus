@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Com.EpixCode.Util.WeakReference.WeakDictionary;
@@ -17,11 +17,11 @@ public class PlayerPresence : MonoBehaviour
         private set
         {
             ReceiveNameSent(value);
-            if (networkView.isMine)
+            if (GetComponent<uLink.NetworkView>().isMine)
             {
                 if (Relay.Instance.IsConnected)
                 {
-                    networkView.RPC("ReceiveNameSent", RPCMode.Others, value);
+                    GetComponent<uLink.NetworkView>().RPC("ReceiveNameSent", uLink.RPCMode.Others, value);
                 }
             }
         }
@@ -36,7 +36,7 @@ public class PlayerPresence : MonoBehaviour
 
     public PlayerScript DefaultPlayerCharacterPrefab;
 
-    public NetworkViewID PossessedCharacterViewID;
+    public uLink.NetworkViewID PossessedCharacterViewID;
 
     private PlayerScript _Possession;
 
@@ -54,19 +54,19 @@ public class PlayerPresence : MonoBehaviour
         set
         {
             _ConnectionQuality = value;
-            if (Server.networkView.isMine)
+            if (Server.GetComponent<uLink.NetworkView>().isMine)
             {
-                networkView.RPC("ReceiveSetConnectionQuality", RPCMode.Others, value);
+                GetComponent<uLink.NetworkView>().RPC("ReceiveSetConnectionQuality", uLink.RPCMode.Others, value);
             }
         }
     }
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void ReceiveSetConnectionQuality(float quality, NetworkMessageInfo info)
+    protected void ReceiveSetConnectionQuality(float quality, uLink.NetworkMessageInfo info)
     {
-        if (Server == null || networkView == null) return;
-        if (info.sender == Server.networkView.owner || networkView.isMine)
+        if (Server == null || GetComponent<uLink.NetworkView>() == null) return;
+        if (info.sender == Server.GetComponent<uLink.NetworkView>().owner || GetComponent<uLink.NetworkView>().isMine)
         {
             _ConnectionQuality = quality;
         }
@@ -99,7 +99,7 @@ public class PlayerPresence : MonoBehaviour
             {
                 _Possession.Possessor = this;
                 _Possession.CameraScript.IsExteriorView = WantsExteriorView;
-                if (networkView.isMine)
+                if (GetComponent<uLink.NetworkView>().isMine)
                 {
                     _Possession.CameraScript.BaseFieldOfView = PlayerPrefs.GetFloat("fov",
                         CameraScript.DefaultBaseFieldOfView);
@@ -107,8 +107,8 @@ public class PlayerPresence : MonoBehaviour
                 }
                 _Possession.OnDeath += ReceivePawnDeath;
 
-                if (_Possession.networkView != null)
-                    PossessedCharacterViewID = _Possession.networkView.viewID;
+                if (_Possession.GetComponent<uLink.NetworkView>() != null)
+                    PossessedCharacterViewID = _Possession.GetComponent<uLink.NetworkView>().viewID;
 
                 IsSpectating = false;
             }
@@ -185,9 +185,9 @@ public class PlayerPresence : MonoBehaviour
         set { _IsDoingMenuStuff = value; }
     }
 
-    public void OnSerializeNetworkView(BitStream stream, NetworkMessageInfo info)
+    public void uLink_OnSerializeNetworkView(uLink.BitStream stream, uLink.NetworkMessageInfo info)
     {
-        NetworkViewID prevPossesedID = PossessedCharacterViewID;
+        uLink.NetworkViewID prevPossesedID = PossessedCharacterViewID;
         stream.Serialize(ref PossessedCharacterViewID);
         stream.Serialize(ref _IsDoingMenuStuff);
         stream.Serialize(ref _Score);
@@ -218,13 +218,13 @@ public class PlayerPresence : MonoBehaviour
     }
 
     // TODO factor out
-    public static PlayerPresence TryGetPlayerPresenceFromNetworkViewID(NetworkViewID viewID)
+    public static PlayerPresence TryGetPlayerPresenceFromNetworkViewID(uLink.NetworkViewID viewID)
     {
-        if (viewID == NetworkViewID.unassigned) return null;
-        NetworkView view = null;
+        if (viewID == uLink.NetworkViewID.unassigned) return null;
+        uLink.NetworkView view = null;
         try
         {
-            view = NetworkView.Find(viewID);
+            view = uLink.NetworkView.Find(viewID);
         }
         catch (Exception)
         {
@@ -238,13 +238,13 @@ public class PlayerPresence : MonoBehaviour
         return null;
     }
 
-    private PlayerScript TryGetPlayerScriptFromNetworkViewID(NetworkViewID viewID)
+    private PlayerScript TryGetPlayerScriptFromNetworkViewID(uLink.NetworkViewID viewID)
     {
-        if (viewID == NetworkViewID.unassigned) return null;
-        NetworkView view = null;
+        if (viewID == uLink.NetworkViewID.unassigned) return null;
+        uLink.NetworkView view = null;
         try
         {
-            view = NetworkView.Find(viewID);
+            view = uLink.NetworkView.Find(viewID);
         }
         catch (Exception)
         {
@@ -261,13 +261,13 @@ public class PlayerPresence : MonoBehaviour
     public void Awake()
     {
         DontDestroyOnLoad(this);
-        PossessedCharacterViewID = NetworkViewID.unassigned;
+        PossessedCharacterViewID = uLink.NetworkViewID.unassigned;
         LastGUIDebugPositions = new WeakDictionary<PlayerScript, Vector2>();
 
         // Ladies and gentlemen, the great and powerful Unity
-        wasMine = networkView.isMine;
+        wasMine = GetComponent<uLink.NetworkView>().isMine;
 
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             Name = PlayerPrefs.GetString("username", "Anonymous");
 
@@ -283,10 +283,10 @@ public class PlayerPresence : MonoBehaviour
         UnsafeAllPlayerPresences.Add(this);
         OnPlayerPresenceAdded(this);
 
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             // Hack, should really compare against Server, but don't know if it's possibly null here?
-            if (Network.isServer)
+            if (uLink.Network.isServer)
                 IsSpectating = false;
             else
                 IsSpectating = true;
@@ -297,7 +297,7 @@ public class PlayerPresence : MonoBehaviour
 
     public void OwnerGoJoin()
     {
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             if (Possession == null)
                 IndicateRespawn();
@@ -307,7 +307,7 @@ public class PlayerPresence : MonoBehaviour
 
     public void OwnerGoSpectate()
     {
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             if (Possession != null)
                 Possession.HealthScript.DoDamageOwner(999, Possession.transform.position, this);
@@ -341,7 +341,7 @@ public class PlayerPresence : MonoBehaviour
 
     public void Update()
     {
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             WeaponIndicatorScript.Instance.ShouldRender = Possession != null;
             UpdateShouldCameraSpin();
@@ -414,7 +414,7 @@ public class PlayerPresence : MonoBehaviour
                 Screen.lockCursor = false;
 
             // Update ping
-            Ping = Network.GetAveragePing(Server.networkView.owner);
+            Ping = uLink.Network.GetAveragePing(Server.GetComponent<uLink.NetworkView>().owner);
         }
 
         if (Possession != null)
@@ -442,17 +442,17 @@ public class PlayerPresence : MonoBehaviour
         if (TimeSinceLastRespawnRequest < MinTimeBetweenRespawnRequests) return;
         TimeSinceLastRespawnRequest = 0f;
 
-        if (Network.isServer)
+        if (uLink.Network.isServer)
             OnPlayerPresenceWantsRespawn();
         else
-            networkView.RPC("ServerIndicateRespawn", RPCMode.Server);
+            GetComponent<uLink.NetworkView>().RPC("ServerIndicateRespawn", uLink.RPCMode.Server);
     }
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void ServerIndicateRespawn(NetworkMessageInfo info)
+    protected void ServerIndicateRespawn(uLink.NetworkMessageInfo info)
     {
-        if (info.sender == networkView.owner)
+        if (info.sender == GetComponent<uLink.NetworkView>().owner)
             OnPlayerPresenceWantsRespawn();
     }
 
@@ -476,13 +476,13 @@ public class PlayerPresence : MonoBehaviour
 
     public void SpawnCharacter(Vector3 position)
     {
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             DoActualSpawn(position);
         }
         else
         {
-            networkView.RPC("RemoteSpawnCharacter", networkView.owner, position);
+            GetComponent<uLink.NetworkView>().RPC("RemoteSpawnCharacter", GetComponent<uLink.NetworkView>().owner, position);
         }
     }
 
@@ -490,14 +490,14 @@ public class PlayerPresence : MonoBehaviour
     private void DoActualSpawn(Vector3 position)
     {
         // ondestroy will be bound in the setter
-        Possession = (PlayerScript)Network.Instantiate(DefaultPlayerCharacterPrefab, position, Quaternion.identity, Relay.CharacterSpawnGroupID);
+        Possession = (PlayerScript)uLink.Network.Instantiate(DefaultPlayerCharacterPrefab, position, Quaternion.identity, Relay.CharacterSpawnGroupID);
     }
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void RemoteSpawnCharacter(Vector3 position, NetworkMessageInfo info)
+    protected void RemoteSpawnCharacter(Vector3 position, uLink.NetworkMessageInfo info)
     {
-        if (info.sender == Server.networkView.owner)
+        if (info.sender == Server.GetComponent<uLink.NetworkView>().owner)
         {
             if (Possession != null)
             {
@@ -512,8 +512,8 @@ public class PlayerPresence : MonoBehaviour
     {
         if (Relay.Instance.IsConnected)
         {
-            Network.RemoveRPCs(character.networkView.owner, Relay.CharacterSpawnGroupID);
-            Network.Destroy(character.gameObject);
+            uLink.Network.RemoveRPCs(character.GetComponent<uLink.NetworkView>().owner, Relay.CharacterSpawnGroupID);
+            uLink.Network.Destroy(character.gameObject);
         }
         else
         {
@@ -528,7 +528,7 @@ public class PlayerPresence : MonoBehaviour
         {
             Possession.OnDeath -= ReceivePawnDeath;
             Possession = null;
-            PossessedCharacterViewID = NetworkViewID.unassigned;
+            PossessedCharacterViewID = uLink.NetworkViewID.unassigned;
         }
     }
 
@@ -540,7 +540,7 @@ public class PlayerPresence : MonoBehaviour
         }
 
         // Draw player names
-        if (networkView.isMine && Possession != null && Camera.current != null)
+        if (GetComponent<uLink.NetworkView>().isMine && Possession != null && Camera.current != null)
         {
             GUI.skin = Relay.Instance.BaseSkin;
             GUIStyle boxStyle = new GUIStyle(Relay.Instance.BaseSkin.customStyles[2])
@@ -573,7 +573,7 @@ public class PlayerPresence : MonoBehaviour
             }
         }
 
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             if (ShouldDisplayJoinPanel)
             {
@@ -607,7 +607,7 @@ public class PlayerPresence : MonoBehaviour
 
     private void OnDrawDebugStuff()
     {
-        if (networkView.isMine && Camera.current != null)
+        if (GetComponent<uLink.NetworkView>().isMine && Camera.current != null)
         {
             GUI.skin = Relay.Instance.BaseSkin;
             GUIStyle boxStyle = new GUIStyle(Relay.Instance.BaseSkin.box) {fixedWidth = 0};
@@ -641,7 +641,7 @@ public class PlayerPresence : MonoBehaviour
     {
         if (Server != null)
         {
-            Server.SendMessageFromServer(text, networkView.owner);
+            Server.SendMessageFromServer(text, GetComponent<uLink.NetworkView>().owner);
         }
         else
         {
@@ -649,28 +649,28 @@ public class PlayerPresence : MonoBehaviour
         }
     }
 
-    public void OnNetworkInstantiate(NetworkMessageInfo info)
+    public void uLink_OnNetworkInstantiate(uLink.NetworkMessageInfo info)
     {
         WantNameSentBack();
     }
 
     private void WantNameSentBack()
     {
-        if (!networkView.isMine)
+        if (!GetComponent<uLink.NetworkView>().isMine)
         {
-            networkView.RPC("SendNameBack", networkView.owner);
+            GetComponent<uLink.NetworkView>().RPC("SendNameBack", GetComponent<uLink.NetworkView>().owner);
         }
     }
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void SendNameBack(NetworkMessageInfo info)
+    protected void SendNameBack(uLink.NetworkMessageInfo info)
     {
-        networkView.RPC("ReceiveNameSent", info.sender, Name);
+        GetComponent<uLink.NetworkView>().RPC("ReceiveNameSent", info.sender, Name);
     }
 
     [RPC]
-    private void ReceiveNameSent(string text)
+    protected void ReceiveNameSent(string text)
     {
         bool wasNamed = HasBeenNamed;
         _Name = text;
@@ -686,21 +686,21 @@ public class PlayerPresence : MonoBehaviour
 
     public void BroadcastChatMessageFrom(string text)
     {
-        if (Server.networkView.isMine)
+        if (Server.GetComponent<uLink.NetworkView>().isMine)
         {
             Server.BroadcastChatMessageFromServer(text, this);
         }
         else
         {
-            networkView.RPC("ServerBroadcastChatMessageFrom", Server.networkView.owner, text);
+            GetComponent<uLink.NetworkView>().RPC("ServerBroadcastChatMessageFrom", Server.GetComponent<uLink.NetworkView>().owner, text);
         }
     }
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void ServerBroadcastChatMessageFrom(string text, NetworkMessageInfo info)
+    protected void ServerBroadcastChatMessageFrom(string text, uLink.NetworkMessageInfo info)
     {
-        if (Server.networkView.isMine && info.sender == networkView.owner)
+        if (Server.GetComponent<uLink.NetworkView>().isMine && info.sender == GetComponent<uLink.NetworkView>().owner)
         {
             Server.BroadcastChatMessageFromServer(text, this);
         }
@@ -709,20 +709,20 @@ public class PlayerPresence : MonoBehaviour
     // Only works from server and owner
     public void SetScorePoints(int points)
     {
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
             OwnerSetScorePoints(points);
         else
-            networkView.RPC("RemoteSetScorePoints", networkView.owner, points);
+            GetComponent<uLink.NetworkView>().RPC("RemoteSetScorePoints", GetComponent<uLink.NetworkView>().owner, points);
     }
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void RemoteSetScorePoints(int points, NetworkMessageInfo info)
+    protected void RemoteSetScorePoints(int points, uLink.NetworkMessageInfo info)
     {
-        if (info.sender != Server.networkView.owner) return;
-        if (networkView.isMine)
+        if (info.sender != Server.GetComponent<uLink.NetworkView>().owner) return;
+        if (GetComponent<uLink.NetworkView>().isMine)
             OwnerSetScorePoints(points);
         else
-            networkView.RPC("RemoteSetScorePoints", networkView.owner, points);
+            GetComponent<uLink.NetworkView>().RPC("RemoteSetScorePoints", GetComponent<uLink.NetworkView>().owner, points);
     }
 
     private void OwnerSetScorePoints(int points)
@@ -734,13 +734,13 @@ public class PlayerPresence : MonoBehaviour
     // Only works from server and owner
     public void ReceiveScorePoints(int points)
     {
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             OwnerReceiveScorePoints(points);
         }
         else
         {
-            networkView.RPC("RemoteReceiveScorePoints", networkView.owner, points);
+            GetComponent<uLink.NetworkView>().RPC("RemoteReceiveScorePoints", GetComponent<uLink.NetworkView>().owner, points);
         }
     }
 
@@ -752,16 +752,16 @@ public class PlayerPresence : MonoBehaviour
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void RemoteReceiveScorePoints(int points, NetworkMessageInfo info)
+    protected void RemoteReceiveScorePoints(int points, uLink.NetworkMessageInfo info)
     {
-        if (info.sender != Server.networkView.owner) return;
-        if (networkView.isMine)
+        if (info.sender != Server.GetComponent<uLink.NetworkView>().owner) return;
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             OwnerReceiveScorePoints(points);
         }
         else
         {
-            networkView.RPC("RemoteReceiveScorePoints", networkView.owner, points);
+            GetComponent<uLink.NetworkView>().RPC("RemoteReceiveScorePoints", GetComponent<uLink.NetworkView>().owner, points);
         }
     }
 }

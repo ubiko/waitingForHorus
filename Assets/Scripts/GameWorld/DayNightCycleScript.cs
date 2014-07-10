@@ -27,14 +27,14 @@ public class DayNightCycleScript : MonoBehaviour {
         RecapturePlayerMaterials();
 	}
 
-    public void OnPlayerConnected( )
+    public void uLink_OnPlayerConnected( )
     {
         RecapturePlayerMaterials();
     }
 
     public void Update()
     {
-		float lerp = Easing.EaseInOut(Mathf.PingPong((float) Network.time, duration) / duration, EasingType.Sine);
+		float lerp = Easing.EaseInOut(Mathf.PingPong((float) uLink.Network.time, duration) / duration, EasingType.Sine);
 		
 		// Fix Fog
 		RenderSettings.fogColor = Color.Lerp( daylightFogColor, nightlightFogColor, lerp );

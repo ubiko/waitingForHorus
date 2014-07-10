@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
@@ -6,7 +6,7 @@ using UnityEngine;
 
 using JsonFx.Json;
 
-namespace MasterServer
+namespace uLink.MasterServer
 {
     // Handles fetching and parsing the list of servers from the master list
 	// server

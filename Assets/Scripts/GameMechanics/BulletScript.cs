@@ -36,12 +36,12 @@ public class BulletScript : MonoBehaviour
 	private Vector3 previousPosition; 
 	private Rigidbody myRigidbody; 
 	
-    public void OnNetworkInstantiate( NetworkMessageInfo info )
+    public void uLink_OnNetworkInstantiate( uLink.NetworkMessageInfo info )
     {
-		/*if( Network.isServer )
+		/*if( uLink.Network.isServer )
 		{
-			foreach( NetworkView nv in GetComponents<NetworkView>() )
-				foreach( NetworkPlayer np in Network.connections )
+			foreach( uLink.NetworkView nv in GetComponents<uLink.NetworkView>() )
+				foreach( uLink.NetworkPlayer np in uLink.Network.connections )
 			   	 nv.SetScope( np, true );
 		}*/
 		
@@ -83,7 +83,7 @@ public class BulletScript : MonoBehaviour
         if(damage > 0 && health != null)
         {
             if (health.PlayerScript.Possessor != Instigator && // No Friendly Fire
-                Network.player == Instigator.networkView.owner) // only do damage from net player that fired
+                uLink.Network.player == Instigator.GetComponent<uLink.NetworkView>().owner) // only do damage from net player that fired
 			{
 				audio.Play(); //Hitreg Sound
 			    health.DeclareHitToOthers(damage, point, Instigator);
@@ -102,7 +102,7 @@ public class BulletScript : MonoBehaviour
             var hitReceiver = c.gameObject.GetComponent<PlayerHitReceiver>();
             if (hitReceiver == null) continue;
             // Recoil is applied per-client, locally
-            if (!hitReceiver.Player.gameObject.networkView.isMine) continue;
+            if (!hitReceiver.Player.gameObject.GetComponent<uLink.NetworkView>().isMine) continue;
 
             var playerTransform = hitReceiver.Player.gameObject.transform;
 

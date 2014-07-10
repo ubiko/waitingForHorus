@@ -45,7 +45,7 @@ public class PlayerScript : MonoBehaviour
     float dashCooldown = 0;
     Animation characterAnimation;
     string currentAnim;
-    //public NetworkPlayer? owner;
+    //public uLink.NetworkPlayer? owner;
     float sinceNotGrounded;
     bool activelyJumping;
     public bool TextBubbleVisible { get; set; }
@@ -92,8 +92,8 @@ public class PlayerScript : MonoBehaviour
                 foreach (var flagPart in FlagParts)
                     flagPart.enabled = _HasFlagVisible;
                 // hack
-                if (Network.isServer)
-                    networkView.RPC("RemoteReceiveHasFlagVisible", RPCMode.Others, _HasFlagVisible);
+                if (uLink.Network.isServer)
+                    GetComponent<uLink.NetworkView>().RPC("RemoteReceiveHasFlagVisible", uLink.RPCMode.Others, _HasFlagVisible);
                 HasEverSetFlagVisibility = true;
             }
         }
@@ -116,18 +116,18 @@ public class PlayerScript : MonoBehaviour
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void RemoteReceiveHasFlagVisible(bool visible)
+    protected void RemoteReceiveHasFlagVisible(bool visible)
     {
             HasFlagVisible = visible;
     }
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void ReceiveRemoteWantsFlagVisibility(NetworkMessageInfo info)
+    protected void ReceiveRemoteWantsFlagVisibility(uLink.NetworkMessageInfo info)
     {
-        if (Network.isServer && HasEverSetFlagVisibility) // try to avoid wastefulness
+        if (uLink.Network.isServer && HasEverSetFlagVisibility) // try to avoid wastefulness
         {
-            networkView.RPC("RemoteReceiveHasFlagVisible", info.sender, _HasFlagVisible);
+            GetComponent<uLink.NetworkView>().RPC("RemoteReceiveHasFlagVisible", info.sender, _HasFlagVisible);
         }
     }
 
@@ -140,10 +140,10 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
-    //private void RemoteSetPossessorByViewID(NetworkViewID playerPresenceViewID)
+    //private void RemoteSetPossessorByViewID(uLink.NetworkViewID playerPresenceViewID)
     //{
     //    Possessor = null;
-    //    NetworkView view = NetworkView.Find(playerPresenceViewID);
+    //    uLink.NetworkView view = uLink.NetworkView.Find(playerPresenceViewID);
     //    if (view == null) return;
     //    var presence = view.observed as PlayerPresence;
     //    if (presence) Possessor = presence;
@@ -189,7 +189,7 @@ public class PlayerScript : MonoBehaviour
     private int OtherPlayerVisibilityLayerMask;
 
     // TODO unused 'get', intentional? No reason to ever set it, then.
-	//List<NetworkPlayer> targetedBy { get; set; }
+	//List<uLink.NetworkPlayer> targetedBy { get; set; }
 
 	List<GameObject> warningSpheres { get; set; }
 
@@ -244,7 +244,7 @@ public class PlayerScript : MonoBehaviour
         OtherPlayerVisibilityLayerMask =
             (1 << LayerMask.NameToLayer("Player")) | (1 << LayerMask.NameToLayer("Default"));
 
-        if (Network.isServer)
+        if (uLink.Network.isServer)
         {
             // Averaging slowly from this value, so start somewhere sensible
             LastNetworkFrameTakeTime = Relay.DesiredTimeBetweenNetworkSends;
@@ -258,7 +258,7 @@ public class PlayerScript : MonoBehaviour
 
     public void Start()
     {
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             gameObject.layer = LayerMask.NameToLayer( "LocalPlayer" );
         }
@@ -271,7 +271,7 @@ public class PlayerScript : MonoBehaviour
         OnPlayerScriptSpawned(this);
 
         // FIXME dirty hack
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             var indicator = Relay.Instance.MainCamera.GetComponent<WeaponIndicatorScript>();
             if (indicator != null)
@@ -283,11 +283,11 @@ public class PlayerScript : MonoBehaviour
             NewestNetworkPosition = transform.position;
         }
 
-        if (!Network.isServer)
+        if (!uLink.Network.isServer)
         {
-            networkView.RPC("ReceiveRemoteWantsFlagVisibility", RPCMode.Server);
+            GetComponent<uLink.NetworkView>().RPC("ReceiveRemoteWantsFlagVisibility", uLink.RPCMode.Server);
         }
-        if (Network.isServer)
+        if (uLink.Network.isServer)
         {
             StartCoroutine(ServerUpdateConnectionQuality());
         }
@@ -307,7 +307,7 @@ public class PlayerScript : MonoBehaviour
         Targeted(enemy);
         if (ShouldSendMessages)
         {
-            networkView.RPC("RemoteReceiveTargetedBy", RPCMode.Others, enemy.networkView.viewID);
+            GetComponent<uLink.NetworkView>().RPC("RemoteReceiveTargetedBy", uLink.RPCMode.Others, enemy.GetComponent<uLink.NetworkView>().viewID);
         }
     }
 
@@ -316,17 +316,17 @@ public class PlayerScript : MonoBehaviour
         Untargeted(enemy);
         if (ShouldSendMessages)
         {
-            networkView.RPC("RemoteReceiveUntargetedBy", RPCMode.Others, enemy.networkView.viewID);
+            GetComponent<uLink.NetworkView>().RPC("RemoteReceiveUntargetedBy", uLink.RPCMode.Others, enemy.GetComponent<uLink.NetworkView>().viewID);
         }
     }
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void RemoteReceiveTargetedBy(NetworkViewID enemyPlayerScriptID, NetworkMessageInfo info)
+    protected void RemoteReceiveTargetedBy(uLink.NetworkViewID enemyPlayerScriptID, uLink.NetworkMessageInfo info)
     {
         try
         {
-            var view = NetworkView.Find(enemyPlayerScriptID);
+            var view = uLink.NetworkView.Find(enemyPlayerScriptID);
             var enemy = (PlayerScript)view.observed;
             if (view.owner == info.sender)
             {
@@ -341,11 +341,11 @@ public class PlayerScript : MonoBehaviour
     }
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void RemoteReceiveUntargetedBy(NetworkViewID enemyPlayerScriptID, NetworkMessageInfo info)
+    protected void RemoteReceiveUntargetedBy(uLink.NetworkViewID enemyPlayerScriptID, uLink.NetworkMessageInfo info)
     {
         try
         {
-            var view = NetworkView.Find(enemyPlayerScriptID);
+            var view = uLink.NetworkView.Find(enemyPlayerScriptID);
             var enemy = (PlayerScript)view.observed;
             if (view.owner == info.sender)
             {
@@ -401,7 +401,7 @@ public class PlayerScript : MonoBehaviour
         if (this == null) return;
         // Also check if enemy is null, might have been destroyed by the time
 		// this RPC is called.
-        if (networkView.isMine && enemy != null)
+        if (GetComponent<uLink.NetworkView>().isMine && enemy != null)
         {
             ScreenSpaceDebug.AddMessage("TARGETED BY", enemy.transform.position);
         }
@@ -412,7 +412,7 @@ public class PlayerScript : MonoBehaviour
 // ReSharper disable once ConditionIsAlwaysTrueOrFalse
 // ReSharper disable once HeuristicUnreachableCode
         if (this == null) return;
-        if (networkView.isMine && enemy != null)
+        if (GetComponent<uLink.NetworkView>().isMine && enemy != null)
         {
             ScreenSpaceDebug.AddMessage("UNTARGETED BY", enemy.transform.position);
         }
@@ -420,7 +420,7 @@ public class PlayerScript : MonoBehaviour
 	
     public void ResetWarnings()
     {
-        if( !networkView.isMine ) return; 
+        if( !GetComponent<uLink.NetworkView>().isMine ) return; 
 		
 		for( int i = 0; i < warningSpheres.Count; i++ ) Destroy( warningSpheres[i] );
 		warningSpheres.Clear();
@@ -429,7 +429,7 @@ public class PlayerScript : MonoBehaviour
     [RPC]
     public void AddRecoil(Vector3 impulse)
     {
-        if (!networkView.isMine) return;
+        if (!GetComponent<uLink.NetworkView>().isMine) return;
         recoilVelocity += impulse;
         if (impulse.y > 0)
             sinceNotGrounded = 0.25f;
@@ -438,7 +438,7 @@ public class PlayerScript : MonoBehaviour
 
     public void ResetVelocities()
     {
-        if (!networkView.isMine) return;
+        if (!GetComponent<uLink.NetworkView>().isMine) return;
         recoilVelocity = Vector3.zero;
         fallingVelocity = Vector3.zero;
     }
@@ -480,7 +480,7 @@ public class PlayerScript : MonoBehaviour
         EnemiesTargetingUs.Update();
 
         // Only interested in playing sound effects locally
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             TimeSinceLastTargetedWarningPlayed += Time.deltaTime;
             // Play sound effect if necessary
@@ -493,7 +493,7 @@ public class PlayerScript : MonoBehaviour
             }
         }
 
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             //TextBubbleVisible = ChatScript.Instance.showChat;
 
@@ -576,7 +576,7 @@ public class PlayerScript : MonoBehaviour
         cameraPivot.rotation = smoothLookRotation;
 
         // dash animation
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             Color color = dashEffectRenderer.material.GetColor("_TintColor");
             Vector3 dashVelocity = new Vector3(fallingVelocity.x, activelyJumping ? 0 : Math.Max(fallingVelocity.y, 0), fallingVelocity.z);
@@ -596,13 +596,13 @@ public class PlayerScript : MonoBehaviour
 
         if(!controller.enabled) return;
         if (Paused) return;
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
             UpdateMovement();
         else
             UpdateRemoteMovement();
 
         // FIXME Hackity hack
-        if (networkView.isMine)
+        if (GetComponent<uLink.NetworkView>().isMine)
         {
             var indicator = Relay.Instance.MainCamera.GetComponent<WeaponIndicatorScript>();
             indicator.HealthCapacity = HealthScript.maxHealth;
@@ -620,7 +620,7 @@ public class PlayerScript : MonoBehaviour
         // jump and dash
         dashCooldown -= Time.deltaTime;
 	 	bool justJumped = false;
-        if((networkView.isMine) && Time.time - lastJumpInputTime <= JumpInputQueueTime)
+        if((GetComponent<uLink.NetworkView>().isMine) && Time.time - lastJumpInputTime <= JumpInputQueueTime)
         {
             bool groundedOrRecentRocketJump = controller.isGrounded || RecentlyDidRocketJump;
             bool recoilOk = recoilVelocity.y <= 0;
@@ -875,7 +875,7 @@ public class PlayerScript : MonoBehaviour
                 float bad = 0.8f;
                 float q = Relay.DesiredTimeBetweenNetworkSends / SlowAverageTimeBetweenNetworkFrames;
                 // Set the quality on the possessor (we're measuring it based on
-				// the packets arriving for this networkView, that's why we do
+				// the packets arriving for this GetComponent<uLink.NetworkView>(), that's why we do
 				// this stuff here instead of on the PlayerPresence, which is
 				// 'reliable delta compressed' type of networkview, and not as
 				// useful for measurements.
@@ -898,7 +898,7 @@ public class PlayerScript : MonoBehaviour
         lastInputVelocity = inputVelocity = Vector3.zero;
     }
 
-    public void OnSerializeNetworkView(BitStream stream, NetworkMessageInfo info)
+    public void uLink_OnSerializeNetworkView(uLink.BitStream stream, uLink.NetworkMessageInfo info)
     {
         Vector3 pPosition = stream.isWriting ? transform.position : Vector3.zero;
 
@@ -977,14 +977,14 @@ public class PlayerScript : MonoBehaviour
     [RPC]
     public void PerformDestroy()
     {
-        if (!Network.isServer)
+        if (!uLink.Network.isServer)
         {
-            networkView.RPC("PerformDestroy", RPCMode.Server);
+            GetComponent<uLink.NetworkView>().RPC("PerformDestroy", uLink.RPCMode.Server);
         }
         else
         {
-            Network.RemoveRPCs(networkView.owner, Relay.CharacterSpawnGroupID);
-            Network.Destroy(networkView.viewID);
+            uLink.Network.RemoveRPCs(GetComponent<uLink.NetworkView>().owner, Relay.CharacterSpawnGroupID);
+            uLink.Network.Destroy(GetComponent<uLink.NetworkView>().viewID);
         }
     }
 
@@ -1066,15 +1066,15 @@ public class PlayerScript : MonoBehaviour
 
     public void RequestedToDieByOwner(PlayerPresence instigator)
     {
-        if (Network.isServer)
+        if (uLink.Network.isServer)
             OnPlayerScriptDied(this, instigator);
         else
-            networkView.RPC("ServerRequestedToDie", RPCMode.Server, instigator.networkView.viewID);
+            GetComponent<uLink.NetworkView>().RPC("ServerRequestedToDie", uLink.RPCMode.Server, instigator.GetComponent<uLink.NetworkView>().viewID);
     }
 
     [RPC]
 // ReSharper disable once UnusedMember.Local
-    private void ServerRequestedToDie(NetworkViewID instigatorPresenceViewID)
+    protected void ServerRequestedToDie(uLink.NetworkViewID instigatorPresenceViewID)
     {
         OnPlayerScriptDied(this, PlayerPresence.TryGetPlayerPresenceFromNetworkViewID(instigatorPresenceViewID));
     }

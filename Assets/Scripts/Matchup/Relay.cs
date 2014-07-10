@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using MasterServer;
+using uLink.MasterServer;
 using UnityEngine;
+using Mono.Nat;
 
 // A single instance, as part of the startup scene, which is used to communicate
 // with the connected server or clients.
@@ -56,7 +57,7 @@ public class Relay : MonoBehaviour
     }
     public static float SpecifiedTimeBetweenNetworkSends
     {
-        get { return 1f / Network.sendRate; }
+        get { return 1f / uLink.Network.sendRate; }
     }
 
     public Server CurrentServer
@@ -102,6 +103,10 @@ public class Relay : MonoBehaviour
     public Color GoodConnectionColor;
     public Color BadConnectionColor;
 
+    public string DetectedExternalAddress;
+    public delegate void DetectedExternalAddressChangedHandler(string newDetectedExternalAddress);
+    public event DetectedExternalAddressChangedHandler OnDetectedExternalAddressChanged = delegate {};
+
     public void Awake()
     {
         DontDestroyOnLoad(this);
@@ -109,7 +114,7 @@ public class Relay : MonoBehaviour
         MessageLog = new MessageLog();
         MessageLog.Skin = BaseSkin;
 
-        Network.natFacilitatorIP = "107.170.78.82";
+        //uLink.Network.natFacilitatorIP = "107.170.78.82";
 
         ExternalServerList = new ExternalServerList();
         ExternalServerList.OnMasterServerListChanged += ReceiveMasterListChanged;
@@ -122,12 +127,16 @@ public class Relay : MonoBehaviour
         OptionsMenu.OnOptionsMenuWantsClosed += () =>
         { ShowOptions = false; };
         OptionsMenu.OnOptionsMenuWantsQuitGame += Application.Quit;
-        OptionsMenu.OnOptionsMenuWantsGoToTitle += Network.Disconnect;
+        OptionsMenu.OnOptionsMenuWantsGoToTitle += uLink.Network.Disconnect;
 
         // We want 60fps send rate, but Unity seems retarded and won't actually
 		// send at the rate you give it. So we'll just specify it higher and
 		// hope to meet the minimum of 60 ticks per second.
-        Network.sendRate = 80;
+        uLink.Network.sendRate = 80;
+
+        // Set up hooks for UPnP
+        NatUtility.DeviceFound += DeviceFound;
+        NatUtility.DeviceLost += DeviceLost;
     }
 
     private string GetRandomMapName()
@@ -149,6 +158,8 @@ public class Relay : MonoBehaviour
     {
         Application.LoadLevel(GetRandomMapName());
 
+        DetectedExternalAddress = Network.player.externalIP;
+        NatUtility.StartDiscovery();
         //ExternalServerList.Refresh();
     }
 
@@ -158,12 +169,12 @@ public class Relay : MonoBehaviour
         {
             case RunMode.Client:
                 TryingToConnect = true;
-                Network.Connect(ConnectingServerHostname, Port);
+                uLink.Network.Connect(ConnectingServerHostname, Port);
                 MessageLog.AddMessage("Connecting to " + ConnectingServerHostname + ":" + Port);
                 break;
             case RunMode.Server:
                 TryingToConnect = true;
-                Network.InitializeServer(32, Port, true); // true = use nat facilitator
+                uLink.Network.InitializeServer(32, Port, false); // true = use nat facilitator
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -173,8 +184,16 @@ public class Relay : MonoBehaviour
     private void ConnectToExternalListedServer(ServerInfoRaw serverInfo)
     {
         TryingToConnect = true;
-        Network.Connect(serverInfo.ip);
-        MessageLog.AddMessage("Connecting to " + serverInfo.ip);
+        if (serverInfo.ip == DetectedExternalAddress)
+        {
+            uLink.Network.Connect("127.0.0.1", Port);
+            MessageLog.AddMessage("Connecting to 127.0.0.1");
+        }
+        else
+        {
+            uLink.Network.Connect(serverInfo.ip, Port);
+            MessageLog.AddMessage("Connecting to " + serverInfo.ip);
+        }
     }
     private void ConnectToRandomServer()
     {
@@ -185,25 +204,34 @@ public class Relay : MonoBehaviour
         }
     }
 
-    public void OnServerInitialized()
+    public void uLink_OnServerInitialized()
     {
         TryingToConnect = false;
         MessageLog.AddMessage("Started server on port " + Port);
-        var server = (Server)Network.Instantiate(BaseServer, Vector3.zero, Quaternion.identity, 0 );
-        server.NetworkGUID = Network.player.guid;
+        var server = (Server)uLink.Network.Instantiate(BaseServer, Vector3.zero, Quaternion.identity, 0 );
+        //server.NetworkGUID = uLink.Network.player.guid;
+        server.NetworkGUID = DetectedExternalAddress;
         MessageLog.AddMessage("Server GUID: " + server.NetworkGUID);
         // Old method, would still be useful if we ever have multiple servers per Unity process (wha?)
-        //CurrentServer = (Server)Network.Instantiate(BaseServer, Vector3.zero, Quaternion.identity, 0 );
+        //CurrentServer = (Server)uLink.Network.Instantiate(BaseServer, Vector3.zero, Quaternion.identity, 0 );
         //CurrentServer.Relay = this;
     }
 
-    public void OnFailedToConnect(NetworkConnectionError error)
+    public void uLink_OnFailedToConnect(uLink.NetworkConnectionError error)
     {
         MessageLog.AddMessage("Failed to connect: " + error);
         TryingToConnect = false;
     }
 
-    public void OnDisconnectedFromServer(NetworkDisconnection error)
+    public void uLink_OnDisconnectedFromServer(uLink.NetworkDisconnection error)
+    {
+        MessageLog.AddMessage("Disconnected from server: " + error);
+        if (CurrentServer != null)
+            Destroy(CurrentServer.gameObject);
+        TryingToConnect = false;
+    }
+
+    public void uLink_OnServerUninitialized(uLink.NetworkDisconnection error)
     {
         MessageLog.AddMessage("Disconnected from server: " + error);
         if (CurrentServer != null)
@@ -218,7 +246,7 @@ public class Relay : MonoBehaviour
         {
             if (Input.GetKeyDown("f8"))
             {
-                Network.Disconnect();
+                uLink.Network.Disconnect();
             }
         }
 
@@ -363,6 +391,20 @@ public class Relay : MonoBehaviour
             }
 
             GUI.enabled = true;
+
+			GUILayout.Box( "", BoxSpacer );
+            if(GUILayout.Button("UPNP"))
+            {
+                GlobalSoundsScript.PlayButtonPress();
+                ShouldMapNatDevices = !ShouldMapNatDevices;
+            }
+            //GUILayout.Box("", BoxSpacer);
+            //if (GUILayout.Button("UNMAP"))
+            //{
+            //    GlobalSoundsScript.PlayButtonPress();
+            //    NatUtility.StopDiscovery();
+            //    UnmapAllDevices();
+            //}
         }
         GUILayout.EndHorizontal();
     }
@@ -421,7 +463,7 @@ public class Relay : MonoBehaviour
         }
     }
 
-    public bool IsConnected { get { return Network.peerType != NetworkPeerType.Disconnected; } }
+    public bool IsConnected { get { return uLink.Network.peerType != uLink.NetworkPeerType.Disconnected; } }
 
     private void ReceiveServerMessage(string text)
     {
@@ -444,6 +486,12 @@ public class Relay : MonoBehaviour
         ExternalServerList.OnMasterServerListChanged -= ReceiveMasterListChanged;
         ExternalServerList.OnMasterServerListFetchError -= ReceiveMasterListFetchError;
         ExternalServerList.Dispose();
+
+        // Remove hooks for UPnP
+        NatUtility.StopDiscovery();
+        NatUtility.DeviceFound -= DeviceFound;
+        NatUtility.DeviceLost -= DeviceLost;
+        ShouldMapNatDevices = false;
     }
 
     private void ReceiveMasterListChanged()
@@ -454,5 +502,109 @@ public class Relay : MonoBehaviour
     private void ReceiveMasterListFetchError(string message)
     {
         MessageLog.AddMessage("Failed to get server list: " + message);
+    }
+
+    private List<INatDevice> NatDevices = new List<INatDevice>();
+
+    private void TryRemoveDevice(INatDevice device)
+    {
+        for (int i = NatDevices.Count - 1; i >= 0; i--)
+        {
+            if (Equals(NatDevices[i], device))
+            {
+                if (ShouldMapNatDevices)
+                    UnmapDevice(device);
+                NatDevices.RemoveAt(i);
+            }
+        }
+    }
+
+    private bool _ShouldMapNatDevices = false;
+
+    public bool ShouldMapNatDevices
+    {
+        get { return _ShouldMapNatDevices; }
+        set
+        {
+            if (_ShouldMapNatDevices != value)
+            {
+                if (value)
+                {
+                    MapAllDevices();
+                }
+                else
+                {
+                    UnmapAllDevices();
+                }
+                _ShouldMapNatDevices = value;
+            }
+        }
+    }
+
+    private void MapAllDevices()
+    {
+        foreach (var device in NatDevices)
+            MapDevice(device);
+    }
+    private void UnmapAllDevices()
+    {
+        foreach (var device in NatDevices)
+            UnmapDevice(device);
+    }
+
+    private void MapDevice(INatDevice device)
+    {
+        //foreach (var mapping in device.GetAllMappings())
+        //{
+        //    MessageLog.AddMessage(mapping.ToString());
+        //}
+        bool exists;
+        try
+        {
+            exists = device.GetSpecificMapping(Protocol.Udp, Port).PublicPort != -1;
+        }
+        catch (MappingException)
+        {
+            exists = false;
+        }
+        if (exists)
+        {
+            MessageLog.AddMessage("Unable to map device: mapping already exists");
+            return;
+        }
+        device.CreatePortMap(new Mapping(Protocol.Udp, Port, Port));
+        //device.CreatePortMap(new Mapping(Protocol.Tcp, Port, Port));
+        MessageLog.AddMessage("Created port mapping on device " + device);
+    }
+    private void UnmapDevice(INatDevice device)
+    {
+        try
+        {
+            device.DeletePortMap(new Mapping(Protocol.Udp, Port, Port));
+            //device.DeletePortMap(new Mapping(Protocol.Tcp, Port, Port));
+            MessageLog.AddMessage("Deleted port mapping on device " + device);
+        }
+        catch (MappingException)
+        {
+            MessageLog.AddMessage("Unable to delete port mapping on device " + device);
+        }
+    }
+
+    private void DeviceFound(object sender, DeviceEventArgs args)
+    {
+        INatDevice device = args.Device;
+
+        NatDevices.Add(device);
+        if (ShouldMapNatDevices)
+            MapDevice(device);
+
+        DetectedExternalAddress = device.GetExternalIP().ToString();
+        OnDetectedExternalAddressChanged(DetectedExternalAddress);
+    }
+    private void DeviceLost(object sender, DeviceEventArgs args)
+    {
+        INatDevice device = args.Device;
+
+        TryRemoveDevice(device);
     }
 }

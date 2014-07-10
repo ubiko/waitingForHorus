@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
@@ -218,7 +218,7 @@ public class Deathmatch : GameMode
         GUILayout.EndHorizontal();
     }
 
-    //public override void OnNewConnection(NetworkPlayer newPlayer)
+    //public override void OnNewConnection(uLink.NetworkPlayer newPlayer)
     //{
         
     //}

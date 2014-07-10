@@ -110,7 +110,7 @@ GameObject:
   m_Component:
   - 4: {fileID: 138782053}
   - 114: {fileID: 138782052}
-  - 148: {fileID: 138782051}
+  - 114: {fileID: 138782051}
   m_Layer: 0
   m_Name: Relay
   m_TagString: Untagged
@@ -118,18 +118,30 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!148 &138782051
-NetworkView:
+--- !u!114 &138782051
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 138782050}
   m_Enabled: 1
-  m_StateSynchronization: 0
-  m_Observed: {fileID: 0}
-  m_ViewID:
-    m_ID: 2
-    m_Type: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9be5429cbf387c4f9140f7d1908fb9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  proxyPrefab: 
+  ownerPrefab: 
+  serverPrefab: 
+  _parent: {fileID: 0}
+  _childIndex: -1
+  _children: []
+  stateSynchronization: 0
+  securable: 3
+  observed: {fileID: 0}
+  _manualViewID: 1
+  rpcReceiver: 2
+  listOfGameObjects: []
+  _prefabRoot: {fileID: 0}
 --- !u!114 &138782052
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -174,6 +186,7 @@ MonoBehaviour:
   ConnectingServerHostname: 127.0.0.1
   GoodConnectionColor: {r: 0, g: 1, b: 0, a: 1}
   BadConnectionColor: {r: 1, g: 0, b: 0, a: 1}
+  DetectedExternalAddress: 
 --- !u!4 &138782053
 Transform:
   m_ObjectHideFlags: 0
@@ -662,11 +675,11 @@ Prefab:
       propertyPath: m_RootOrder
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 14800000, guid: 2dd6de682d9c2430d81417f49e0625c4, type: 2}
+    - target: {fileID: 0}
       propertyPath: m_ViewID.m_ID
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 14800000, guid: 2dd6de682d9c2430d81417f49e0625c4, type: 2}
+    - target: {fileID: 0}
       propertyPath: m_ViewID.m_Type
       value: 1
       objectReference: {fileID: 0}
@@ -734,7 +747,13 @@ Prefab:
       propertyPath: m_Volume
       value: .684000015
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 11400000, guid: 2dd6de682d9c2430d81417f49e0625c4, type: 2}
+      propertyPath: _manualViewID
+      value: 3
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 0}
+    - {fileID: 11400000, guid: 2dd6de682d9c2430d81417f49e0625c4, type: 2}
   m_ParentPrefab: {fileID: 100100000, guid: 2dd6de682d9c2430d81417f49e0625c4, type: 2}
   m_RootGameObject: {fileID: 210913190}
   m_IsPrefabParent: 0
@@ -881,7 +900,7 @@ GameObject:
   m_Component:
   - 4: {fileID: 1403338309}
   - 114: {fileID: 1403338311}
-  - 148: {fileID: 1403338310}
+  - 114: {fileID: 1403338310}
   m_Layer: 0
   m_Name: Effects
   m_TagString: Untagged
@@ -901,19 +920,30 @@ Transform:
   m_Children: []
   m_Father: {fileID: 210913191}
   m_RootOrder: 0
---- !u!148 &1403338310
-NetworkView:
+--- !u!114 &1403338310
+MonoBehaviour:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 14800000, guid: 2dd6de682d9c2430d81417f49e0625c4,
-    type: 2}
-  m_PrefabInternal: {fileID: 1171291812}
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1403338308}
   m_Enabled: 1
-  m_StateSynchronization: 0
-  m_Observed: {fileID: 0}
-  m_ViewID:
-    m_ID: 1
-    m_Type: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9be5429cbf387c4f9140f7d1908fb9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  proxyPrefab: 
+  ownerPrefab: 
+  serverPrefab: 
+  _parent: {fileID: 0}
+  _childIndex: -1
+  _children: []
+  stateSynchronization: 0
+  securable: 3
+  observed: {fileID: 0}
+  _manualViewID: 2
+  rpcReceiver: 2
+  listOfGameObjects: []
+  _prefabRoot: {fileID: 0}
 --- !u!114 &1403338311
 MonoBehaviour:
   m_ObjectHideFlags: 0

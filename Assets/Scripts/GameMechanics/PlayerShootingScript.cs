@@ -197,7 +197,7 @@ public class PlayerShootingScript : MonoBehaviour
         if (playerScript.Paused)
             bulletsLeft = BurstCount;
 		
-        if ( networkView.isMine && Screen.lockCursor && !playerScript.Paused )
+        if ( GetComponent<uLink.NetworkView>().isMine && Screen.lockCursor && !playerScript.Paused )
 		{
 			cooldownLeft = Mathf.Max( 0, cooldownLeft - Time.deltaTime );
 			heat = Mathf.Clamp01( heat - Time.deltaTime );
@@ -429,20 +429,20 @@ public class PlayerShootingScript : MonoBehaviour
         {
             if (playerScript.ShouldSendMessages)
             {
-                networkView.RPC("ShootFast", RPCMode.Others,
-                    finalFiringPosition, finalFiringRotation, Network.player );
+                GetComponent<uLink.NetworkView>().RPC("ShootFast", uLink.RPCMode.Others,
+                    finalFiringPosition, finalFiringRotation, uLink.Network.player );
             }
-            ShootFast( finalFiringPosition, finalFiringRotation, Network.player );
+            ShootFast( finalFiringPosition, finalFiringRotation, uLink.Network.player );
             AddGunImpulse(0.5f);
         }
         else
         {
             if (playerScript.ShouldSendMessages)
             {
-                networkView.RPC("Shoot", RPCMode.Others,
-                    finalFiringPosition, finalFiringRotation, Network.player);
+                GetComponent<uLink.NetworkView>().RPC("Shoot", uLink.RPCMode.Others,
+                    finalFiringPosition, finalFiringRotation, uLink.Network.player);
             }
-            Shoot( finalFiringPosition, finalFiringRotation, Network.player );
+            Shoot( finalFiringPosition, finalFiringRotation, uLink.Network.player );
             AddGunImpulse(0.3f);
         }
         playerCamera.AddGunShotImpulse(0.65f);
@@ -467,22 +467,22 @@ public class PlayerShootingScript : MonoBehaviour
         Quaternion firingRotation = Quaternion.FromToRotation(Vector3.forward, firingDirection);
 
         var lastKnownPosition = Vector3.zero;
-        NetworkPlayer targetOwner = Network.player;
+        uLink.NetworkPlayer targetOwner = uLink.Network.player;
         if( target != null )
         {
-            targetOwner = target.networkView.owner;
+            targetOwner = target.GetComponent<uLink.NetworkView>().owner;
             lastKnownPosition = target.transform.position;
         }
 
         if (playerScript.ShouldSendMessages)
         {
-            networkView.RPC("ShootHoming", RPCMode.Others,
+            GetComponent<uLink.NetworkView>().RPC("ShootHoming", uLink.RPCMode.Others,
                 gun.position + firingDirection*4.0f, firingRotation*spreadRotation,
-                Network.player, targetOwner, lastKnownPosition, homing, doSound);
+                uLink.Network.player, targetOwner, lastKnownPosition, homing, doSound);
         }
         ShootHoming(
             gun.position + firingDirection * 4.0f, firingRotation * spreadRotation,
-            Network.player, targetOwner, lastKnownPosition, homing, doSound );
+            uLink.Network.player, targetOwner, lastKnownPosition, homing, doSound );
     }
 
     void DoRailShot()
@@ -491,16 +491,16 @@ public class PlayerShootingScript : MonoBehaviour
         Quaternion finalFiringRotation = Quaternion.FromToRotation(Vector3.forward, firingDirection);
         if (playerScript.ShouldSendMessages)
         {
-            networkView.RPC("ShootRail", RPCMode.Others,
-                finalFiringPosition, finalFiringRotation, Network.player);
+            GetComponent<uLink.NetworkView>().RPC("ShootRail", uLink.RPCMode.Others,
+                finalFiringPosition, finalFiringRotation, uLink.Network.player);
         }
-        ShootRail( finalFiringPosition, finalFiringRotation, Network.player );
+        ShootRail( finalFiringPosition, finalFiringRotation, uLink.Network.player );
         playerCamera.AddGunShotImpulse(1.7f);
         AddGunImpulse(3.0f);
     }
 
     [RPC]
-    void Shoot(Vector3 position, Quaternion rotation, NetworkPlayer player)
+    protected void Shoot(Vector3 position, Quaternion rotation, uLink.NetworkPlayer player)
     {
         BulletScript bullet = (BulletScript)Instantiate( bulletPrefab, position, rotation );
         bullet.Instigator = playerScript.Possessor;
@@ -509,7 +509,7 @@ public class PlayerShootingScript : MonoBehaviour
         	burstGunSound.Play();
     }
     [RPC]
-    void ShootFast(Vector3 position, Quaternion rotation, NetworkPlayer player)
+    protected void ShootFast(Vector3 position, Quaternion rotation, uLink.NetworkPlayer player)
     {
         BulletScript bullet = (BulletScript)Instantiate( fastBulletPrefab, position, rotation );
         bullet.Instigator = playerScript.Possessor;
@@ -520,7 +520,7 @@ public class PlayerShootingScript : MonoBehaviour
 
     // TODO very inefficient
     [RPC]
-    void ShootHoming(Vector3 position, Quaternion rotation, NetworkPlayer player, NetworkPlayer target, Vector3 lastKnownPosition, float homing, bool doSound)
+    protected void ShootHoming(Vector3 position, Quaternion rotation, uLink.NetworkPlayer player, uLink.NetworkPlayer target, Vector3 lastKnownPosition, float homing, bool doSound)
     {
         BulletScript bullet = (BulletScript)Instantiate( bulletPrefab, position, rotation );
         bullet.Instigator = playerScript.Possessor;
@@ -529,7 +529,7 @@ public class PlayerShootingScript : MonoBehaviour
         try
         {
             targetScript = PlayerScript.UnsafeAllEnabledPlayerScripts.Where(
-                x => x.networkView.owner == target).OrderBy(x => Vector3.Distance(x.transform.position, lastKnownPosition)).FirstOrDefault();
+                x => x.GetComponent<uLink.NetworkView>().owner == target).OrderBy(x => Vector3.Distance(x.transform.position, lastKnownPosition)).FirstOrDefault();
         }
         catch (Exception) { targetScript = null; }
 
@@ -544,7 +544,7 @@ public class PlayerShootingScript : MonoBehaviour
     }
 
     [RPC]
-    void ShootRail(Vector3 position, Quaternion rotation, NetworkPlayer player)
+    protected void ShootRail(Vector3 position, Quaternion rotation, uLink.NetworkPlayer player)
     {
         BulletScript bullet = (BulletScript)Instantiate( railPrefab, position, rotation );
         BulletScript cosmeticBullet = (BulletScript)Instantiate( railCosmeticPrefab, position, rotation );

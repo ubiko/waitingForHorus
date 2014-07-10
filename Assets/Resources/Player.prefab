@@ -513,7 +513,7 @@ GameObject:
   - 4: {fileID: 400064}
   - 33: {fileID: 3300046}
   - 23: {fileID: 2300048}
-  m_Layer: 12
+  m_Layer: 0
   m_Name: Disc_3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3022,6 +3022,7 @@ MonoBehaviour:
   - {fileID: 100106}
   - {fileID: 100104}
   - {fileID: 100120}
+  - {fileID: 100064}
   HackDisableShadowsObjects:
   - {fileID: 100056}
   - {fileID: 100124}
